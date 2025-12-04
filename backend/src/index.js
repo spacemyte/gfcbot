@@ -123,6 +123,18 @@ app.get("/auth/user", isAuthenticated, (req, res) => {
   });
 });
 
+// Diagnostic endpoint
+app.get("/api/health", (req, res) => {
+  res.json({
+    status: "ok",
+    database_url_set: !!process.env.DATABASE_URL,
+    supabase_url_set: !!process.env.SUPABASE_URL,
+    supabase_key_set: !!process.env.SUPABASE_KEY,
+    node_env: process.env.NODE_ENV,
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // API routes
 const featuresRouter = require("./routes/features");
 const embedsRouter = require("./routes/embeds");
