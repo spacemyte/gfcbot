@@ -35,8 +35,8 @@ class InstagramEmbed(commands.Cog):
         cache_entry = self.config_cache.get(guild_id)
         if cache_entry and (now - cache_entry.get('fetched_at', 0) < 300):
             return cache_entry['config']
-        # Fetch from backend API
-        url = f"{self.api_url}/api/instagram-embed-config/{guild_id}"
+        # Fetch from bot-accessible endpoint (no auth required)
+        url = f"{self.api_url}/api/bot/instagram-embed-config/{guild_id}"
         try:
             async with self.session.get(url, timeout=5) as resp:
                 if resp.status == 200:

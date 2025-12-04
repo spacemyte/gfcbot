@@ -149,6 +149,29 @@ app.use(
   isAuthenticated,
   instagramEmbedConfigRouter
 );
+// Bot-accessible read-only endpoint for Instagram embed config (no auth required)
+app.get("/api/bot/instagram-embed-config/:serverId", async (req, res) => {
+  try {
+    const { db } = require("./supabase");
+    const result = await db.query(
+      "SELECT * FROM instagram_embed_config WHERE server_id = $1",
+      [req.params.serverId]
+    );
+    if (result.rows.length === 0) {
+      // Return defaults if no config exists yet
+      return res.json({
+        server_id: req.params.serverId,
+        webhook_repost_enabled: false,
+        pruning_enabled: true,
+        pruning_max_days: 90,
+      });
+    }
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error("Error fetching instagram embed config:", error);
+    res.status(500).json({ error: "Failed to fetch config" });
+  }
+});
 app.use("/api/embeds", isAuthenticated, embedsRouter);
 app.use("/api/messages", isAuthenticated, messagesRouter);
 app.use("/api/audit-logs", isAuthenticated, auditLogsRouter);
