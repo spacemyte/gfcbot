@@ -154,40 +154,19 @@ class InstagramEmbed(commands.Cog):
             return
         
         try:
+            # Reply to the reply and mention the original user
             original_user = await self.bot.fetch_user(original_user_id)
             if not original_user:
                 logger.warning(f'Could not fetch user {original_user_id} for reply notification')
                 return
             
-            # Get channel mention safely
-            if hasattr(message.channel, 'mention'):
-                channel_name = message.channel.mention
-            else:
-                channel_name = f'#{getattr(message.channel, "name", "unknown")}'
-            
-            # Create embed for the notification
-            embed = discord.Embed(
-                title="💬 New Reply to Your Instagram Post",
-                description=f"{message.author.mention} replied to your Instagram embed in {channel_name}",
-                color=discord.Color.blue(),
-                timestamp=message.created_at
+            # Reply to the user's message and tag the original poster
+            await message.reply(
+                f"{original_user.mention}",
+                mention_author=False
             )
+            logger.info(f'Notified user {original_user_id} about reply from {message.author.id} via reply')
             
-            # Add reply content (truncated if too long)
-            reply_content = message.content[:1000] if message.content else "*[No text content]*"
-            if len(message.content) > 1000:
-                reply_content += "..."
-            embed.add_field(name="Reply", value=reply_content, inline=False)
-            
-            # Add jump link
-            embed.add_field(name="Jump to Message", value=f"[Click here]({message.jump_url})", inline=False)
-            
-            # Send DM
-            await original_user.send(embed=embed)
-            logger.info(f'Notified user {original_user_id} about reply from {message.author.id}')
-            
-        except discord.Forbidden:
-            logger.warning(f'Could not DM user {original_user_id} (DMs disabled or blocked)')
         except Exception as e:
             logger.error(f'Failed to notify user {original_user_id} about reply: {e}')
     
