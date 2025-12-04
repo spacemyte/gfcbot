@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import axios from 'axios'
+
+const API_URL = import.meta.env.VITE_API_URL || ''
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import EmbedManager from './pages/EmbedManager'
@@ -22,7 +24,7 @@ function App() {
 
   const checkAuth = async () => {
     try {
-      const response = await axios.get('/auth/user')
+      const response = await axios.get(`${API_URL}/auth/user`)
       setUser(response.data)
     } catch (error) {
       console.log('Not authenticated')
