@@ -5,18 +5,69 @@ import axios from 'axios'
 
 const API_URL = import.meta.env.VITE_API_URL || ''
 
-export default function EmbedManager() {
   const { serverId } = useParams()
   const [embeds, setEmbeds] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
   const [newPrefix, setNewPrefix] = useState('')
   const [featureId, setFeatureId] = useState(null)
+  // Instagram embed config state
+  const [embedConfig, setEmbedConfig] = useState({
+    webhook_repost_enabled: false,
+    pruning_enabled: true,
+    pruning_max_days: 90
+  })
+  const [configLoading, setConfigLoading] = useState(true)
+  const [configSaving, setConfigSaving] = useState(false)
+  const [configMessage, setConfigMessage] = useState(null)
 
   useEffect(() => {
     fetchEmbeds()
     fetchFeatureId()
+    fetchEmbedConfig()
   }, [serverId])
+
+  const fetchEmbedConfig = async () => {
+    setConfigLoading(true)
+    try {
+      const response = await axios.get(`${API_URL}/api/instagram-embed-config/${serverId}`)
+      setEmbedConfig(response.data)
+    } catch (error) {
+      if (error.response && error.response.status === 404) {
+        // No config yet, use defaults
+        setEmbedConfig({
+          webhook_repost_enabled: false,
+          pruning_enabled: true,
+          pruning_max_days: 90
+        })
+      } else {
+        console.error('Error fetching Instagram embed config:', error)
+      }
+    } finally {
+      setConfigLoading(false)
+    }
+  }
+
+  const handleConfigChange = (field, value) => {
+    setEmbedConfig((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const handleConfigSave = async (e) => {
+    e.preventDefault()
+    setConfigSaving(true)
+    setConfigMessage(null)
+    try {
+      await axios.put(`${API_URL}/api/instagram-embed-config/${serverId}`,
+        embedConfig
+      )
+      setConfigMessage({ type: 'success', text: 'Settings saved successfully!' })
+    } catch (error) {
+      setConfigMessage({ type: 'error', text: 'Failed to save settings.' })
+      console.error('Error saving Instagram embed config:', error)
+    } finally {
+      setConfigSaving(false)
+    }
+  }
 
   const fetchFeatureId = async () => {
     try {
@@ -129,6 +180,72 @@ export default function EmbedManager() {
 
   return (
     <div className="space-y-6">
+      {/* Instagram Embed Config Section */}
+      <div className="bg-discord-bg-light p-6 rounded-lg">
+        <h2 className="text-xl font-semibold text-white mb-4">Instagram Embed Settings</h2>
+        {configLoading ? (
+          <div className="text-white">Loading settings...</div>
+        ) : (
+          <form onSubmit={handleConfigSave} className="space-y-4">
+            <div className="flex items-center space-x-3">
+              <input
+                type="checkbox"
+                id="webhook-repost-enabled"
+                checked={embedConfig.webhook_repost_enabled}
+                onChange={e => handleConfigChange('webhook_repost_enabled', e.target.checked)}
+                className="w-5 h-5 text-discord-blue bg-discord-bg border-gray-600 rounded focus:ring-discord-blue"
+              />
+              <label htmlFor="webhook-repost-enabled" className="text-white">
+                Use webhook repost mode (delete &amp; repost as user)
+              </label>
+            </div>
+            <div className="flex items-center space-x-3">
+              <input
+                type="checkbox"
+                id="pruning-enabled"
+                checked={embedConfig.pruning_enabled}
+                onChange={e => handleConfigChange('pruning_enabled', e.target.checked)}
+                className="w-5 h-5 text-discord-blue bg-discord-bg border-gray-600 rounded focus:ring-discord-blue"
+              />
+              <label htmlFor="pruning-enabled" className="text-white">
+                Enable automatic data pruning
+              </label>
+            </div>
+            {embedConfig.pruning_enabled && (
+              <div>
+                <label className="block text-gray-300 mb-2">
+                  Maximum retention period (days)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="90"
+                  value={embedConfig.pruning_max_days}
+                  onChange={e => handleConfigChange('pruning_max_days', parseInt(e.target.value))}
+                  className="w-full px-3 py-2 bg-discord-bg text-white rounded focus:outline-none focus:ring-2 focus:ring-discord-blue"
+                />
+                <p className="mt-2 text-sm text-gray-400">
+                  Data older than {embedConfig.pruning_max_days} days will be automatically deleted. Maximum: 90 days.
+                </p>
+              </div>
+            )}
+            <div className="flex items-center space-x-4">
+              <button
+                type="submit"
+                disabled={configSaving}
+                className="px-4 py-2 bg-discord-green text-white rounded hover:bg-green-600 transition disabled:opacity-50"
+              >
+                {configSaving ? 'Saving...' : 'Save Settings'}
+              </button>
+              {configMessage && (
+                <span className={configMessage.type === 'success' ? 'text-green-400' : 'text-red-400'}>
+                  {configMessage.text}
+                </span>
+              )}
+            </div>
+          </form>
+        )}
+      </div>
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-white">Instagram Embed Manager</h1>

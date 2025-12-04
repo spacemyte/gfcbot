@@ -16,6 +16,8 @@ async function runMigrations() {
       "database/001_initial_schema.sql",
       "database/002_row_level_security.sql",
       "database/003_functions_and_triggers.sql",
+      "database/004_add_webhook_repost_to_pruning_config.sql",
+      "database/005_instagram_embed_config.sql",
     ];
 
     for (const migrationFile of migrations) {

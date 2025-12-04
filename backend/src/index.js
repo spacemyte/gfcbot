@@ -137,12 +137,18 @@ app.get("/api/health", (req, res) => {
 
 // API routes
 const featuresRouter = require("./routes/features");
+const instagramEmbedConfigRouter = require("./routes/instagram-embed-config");
 const embedsRouter = require("./routes/embeds");
 const messagesRouter = require("./routes/messages");
 const auditLogsRouter = require("./routes/audit-logs");
 const pruningRouter = require("./routes/pruning");
 
 app.use("/api/features", isAuthenticated, featuresRouter);
+app.use(
+  "/api/instagram-embed-config",
+  isAuthenticated,
+  instagramEmbedConfigRouter
+);
 app.use("/api/embeds", isAuthenticated, embedsRouter);
 app.use("/api/messages", isAuthenticated, messagesRouter);
 app.use("/api/audit-logs", isAuthenticated, auditLogsRouter);

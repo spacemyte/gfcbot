@@ -23,6 +23,35 @@ class InstagramEmbed(commands.Cog):
         self.bot = bot
         self.validation_queue = asyncio.Queue()
         self.session: Optional[aiohttp.ClientSession] = None
+        self.config_cache: Dict[int, Dict] = {}  # guild_id -> config
+        self.api_url = os.getenv('API_URL', 'http://localhost:3001')  # Set your backend API URL here
+
+    async def get_instagram_embed_config(self, guild_id: int) -> Dict:
+        if not self.session:
+            self.session = aiohttp.ClientSession()
+        # Cache for 5 minutes per guild
+        now = datetime.utcnow().timestamp()
+        cache_entry = self.config_cache.get(guild_id)
+        if cache_entry and (now - cache_entry.get('fetched_at', 0) < 300):
+            return cache_entry['config']
+        # Fetch from backend API
+        url = f"{self.api_url}/api/instagram-embed-config/{guild_id}"
+        try:
+            async with self.session.get(url, timeout=5) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    self.config_cache[guild_id] = {'config': data, 'fetched_at': now}
+                    return data
+                else:
+                    logger.warning(f"Failed to fetch embed config for guild {guild_id}: HTTP {resp.status}")
+        except Exception as e:
+            logger.error(f"Error fetching embed config for guild {guild_id}: {e}")
+        # Fallback defaults
+        return {
+            'webhook_repost_enabled': False,
+            'pruning_enabled': True,
+            'pruning_max_days': 90
+        }
         
     async def cog_load(self):
         """Initialize aiohttp session when cog loads."""
@@ -107,52 +136,58 @@ class InstagramEmbed(commands.Cog):
             original_url: Original Instagram URL
             post_id: Instagram post ID
         """
-        # Get embed configs for this server
-        embed_configs = await self.bot.db.get_embed_configs(message.guild.id)
-        
-        if not embed_configs:
-            logger.warning(f'No embed configs found for server {message.guild.id}')
+        # Get per-server Instagram embed config
+        guild = message.guild
+        if not guild:
+            logger.warning('Message has no guild (DM or system message); skipping embed config.')
             return
-        
-        # Try each prefix in priority order
-        for config in embed_configs:
-            prefix = config['prefix']
+        config = await self.get_instagram_embed_config(guild.id)
+        webhook_mode = config.get('webhook_repost_enabled', False)
+        embed_configs = await self.bot.db.get_embed_configs(guild.id)
+        if not embed_configs:
+            logger.warning(f'No embed configs found for server {guild.id}')
+            return
+        for embed_config in embed_configs:
+            prefix = embed_config['prefix']
             embedded_url = original_url.replace('instagram.com', f'{prefix}instagram.com')
-            
             logger.info(f'Trying prefix "{prefix}" for URL: {original_url}')
-            
-            # Validate the embedded URL
             is_valid, error = await self._validate_url(embedded_url)
-            
             if is_valid:
-                # Success! Suppress the original embed and send a reply with the embedded URL
                 try:
-                    # Suppress embeds on the original message
-                    await message.edit(suppress=True)
-                    
-                    # Send reply with embedded URL
-                    new_content = message.content.replace(original_url, embedded_url)
-                    await message.reply(new_content, mention_author=False)
-                    
-                    # Log success to database
-                    await self.bot.db.insert_message_data(
-                        message_id=message.id,
-                        channel_id=message.channel.id,
-                        server_id=message.guild.id,
-                        user_id=message.author.id,
-                        original_url=original_url,
-                        embedded_url=embedded_url,
-                        embed_prefix_used=prefix,
-                        validation_status='success',
-                        validation_error=None
-                    )
-                    
-                    logger.info(f'Successfully embedded URL with prefix "{prefix}"')
-                    return
-                    
+                    if webhook_mode and isinstance(message.channel, discord.TextChannel):
+                        await self._repost_with_webhook(message, embedded_url)
+                        await self.bot.db.insert_message_data(
+                            message_id=message.id,
+                            channel_id=message.channel.id,
+                            server_id=guild.id,
+                            user_id=message.author.id,
+                            original_url=original_url,
+                            embedded_url=embedded_url,
+                            embed_prefix_used=prefix,
+                            validation_status='success',
+                            validation_error=None
+                        )
+                        logger.info(f'Successfully reposted with webhook for prefix "{prefix}"')
+                        return
+                    else:
+                        await message.edit(suppress=True)
+                        new_content = message.content.replace(original_url, embedded_url)
+                        await message.reply(new_content, mention_author=False)
+                        await self.bot.db.insert_message_data(
+                            message_id=message.id,
+                            channel_id=message.channel.id,
+                            server_id=guild.id,
+                            user_id=message.author.id,
+                            original_url=original_url,
+                            embedded_url=embedded_url,
+                            embed_prefix_used=prefix,
+                            validation_status='success',
+                            validation_error=None
+                        )
+                        logger.info(f'Successfully embedded URL with prefix "{prefix}"')
+                        return
                 except discord.Forbidden:
-                    logger.error(f'Missing permissions to suppress embeds or send message in channel {message.channel.id}')
-                    # Try to at least send the reply even if we can't suppress
+                    logger.error(f'Missing permissions to suppress embeds/send message in channel {message.channel.id}')
                     try:
                         new_content = message.content.replace(original_url, embedded_url)
                         await message.reply(new_content, mention_author=False)
@@ -161,17 +196,45 @@ class InstagramEmbed(commands.Cog):
                     except:
                         break
                 except discord.HTTPException as e:
-                    logger.error(f'Failed to suppress embed or send reply: {e}')
+                    logger.error(f'Failed to suppress embed/send reply: {e}')
                     break
             else:
                 logger.warning(f'Prefix "{prefix}" failed: {error}')
-        
-        # All prefixes failed - log and send reply
         await self._handle_failure(
             message=message,
             original_url=original_url,
             error='All embed prefixes failed validation'
         )
+
+    async def _repost_with_webhook(self, message: discord.Message, embedded_url: str):
+        """
+        Delete the original message and repost as the user using a webhook (only in text channels).
+        """
+        try:
+            # Only allow in text channels
+            if not isinstance(message.channel, discord.TextChannel):
+                logger.warning('Webhook repost attempted in non-text channel; skipping.')
+                return
+            guild = message.guild
+            if not guild:
+                logger.warning('Webhook repost attempted in message with no guild; skipping.')
+                return
+            await message.delete()
+            webhooks = await message.channel.webhooks()
+            webhook = None
+            for wh in webhooks:
+                if wh.user and wh.user.id == guild.me.id:
+                    webhook = wh
+                    break
+            if not webhook:
+                webhook = await message.channel.create_webhook(name="GFCBot")
+            await webhook.send(
+                content=embedded_url,
+                username=message.author.display_name,
+                avatar_url=message.author.display_avatar.url
+            )
+        except Exception as e:
+            logger.error(f"Failed to repost with webhook: {e}")
     
     async def _validate_url(self, url: str, timeout: int = 5) -> tuple[bool, Optional[str]]:
         """

@@ -6,7 +6,7 @@ const { db } = require("../supabase");
 router.get("/:serverId", async (req, res) => {
   try {
     const result = await db.query(
-      "SELECT * FROM pruning_config WHERE server_id = $1",
+      "SELECT *, COALESCE(webhook_repost_enabled, false) AS webhook_repost_enabled FROM pruning_config WHERE server_id = $1",
       [req.params.serverId]
     );
 
@@ -58,54 +58,56 @@ router.put("/:serverId", async (req, res) => {
         ]
       );
     } else {
-      // Update existing config
-      const updates = [];
-      const values = [req.params.serverId];
-      let paramCount = 2;
+      // Update pruning config for a server (now supports webhook_repost_enabled)
+      router.put("/:serverId", async (req, res) => {
+        try {
+          const { enabled, max_days, webhook_repost_enabled } = req.body;
 
-      if (enabled !== undefined) {
-        updates.push(`enabled = $${paramCount++}`);
-        values.push(enabled);
-      }
-      if (max_days !== undefined) {
-        updates.push(`max_days = $${paramCount++}`);
-        values.push(max_days);
-      }
+          // Check if config exists
+          const existing = await db.query(
+            "SELECT id FROM pruning_config WHERE server_id = $1",
+            [req.params.serverId]
+          );
 
-      updates.push(`updated_at = NOW()`);
+          let result;
+          if (existing.rows.length > 0) {
+            // Update
+            result = await db.query(
+              `UPDATE pruning_config
+               SET enabled = $1, max_days = $2, webhook_repost_enabled = $3, updated_at = NOW()
+               WHERE server_id = $4
+               RETURNING *`,
+              [enabled, max_days, webhook_repost_enabled, req.params.serverId]
+            );
+          } else {
+            // Insert
+            result = await db.query(
+              `INSERT INTO pruning_config (server_id, enabled, max_days, webhook_repost_enabled)
+               VALUES ($1, $2, $3, $4)
+               RETURNING *`,
+              [req.params.serverId, enabled, max_days, webhook_repost_enabled]
+            );
+          }
 
-      result = await db.query(
-        `UPDATE pruning_config 
-         SET ${updates.join(", ")}
-         WHERE server_id = $1
-         RETURNING *`,
-        values
-      );
-    }
+          // Log audit trail
+          if (req.user) {
+            await db.query(
+              `INSERT INTO audit_logs (server_id, user_id, action, target_type, target_id, details)
+               VALUES ($1, $2, $3, $4, $5, $6)`,
+              [
+                req.params.serverId,
+                req.user.id,
+                "pruning_config_updated",
+                "pruning_config",
+                result.rows[0].id,
+                JSON.stringify({ enabled, max_days, webhook_repost_enabled }),
+              ]
+            );
+          }
 
-    const data = result.rows[0];
-
-    // Log audit trail
-    if (req.user) {
-      await db.query(
-        `INSERT INTO audit_logs (server_id, user_id, action, target_type, target_id, details)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [
-          req.params.serverId,
-          req.user.id,
-          "pruning_config_updated",
-          "pruning_config",
-          req.params.serverId,
-          JSON.stringify({ enabled, max_days }),
-        ]
-      );
-    }
-
-    res.json(data);
-  } catch (error) {
-    console.error("Error updating pruning config:", error);
-    res.status(500).json({ error: "Failed to update pruning config" });
-  }
-});
-
-module.exports = router;
+          res.json(result.rows[0]);
+        } catch (error) {
+          console.error("Error updating pruning config:", error);
+          res.status(500).json({ error: "Failed to update pruning config" });
+        }
+      });
