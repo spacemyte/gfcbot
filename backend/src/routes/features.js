@@ -5,17 +5,24 @@ const { supabase } = require("../index");
 // Get all features
 router.get("/", async (req, res) => {
   try {
+    console.log("Fetching features...");
     const { data, error } = await supabase
       .from("features")
       .select("*")
       .order("name");
 
-    if (error) throw error;
+    if (error) {
+      console.error("Supabase error fetching features:", error);
+      throw error;
+    }
 
+    console.log("Features fetched successfully:", data);
     res.json(data);
   } catch (error) {
-    console.error("Error fetching features:", error);
-    res.status(500).json({ error: "Failed to fetch features" });
+    console.error("Error fetching features:", error.message);
+    res
+      .status(500)
+      .json({ error: "Failed to fetch features", details: error.message });
   }
 });
 

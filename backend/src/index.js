@@ -10,11 +10,19 @@ const { createClient } = require("@supabase/supabase-js");
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Check for required environment variables
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
+  console.error("ERROR: SUPABASE_URL or SUPABASE_KEY not set!");
+  process.exit(1);
+}
+
 // Initialize Supabase client
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_KEY
 );
+
+console.log("Supabase client initialized with URL:", process.env.SUPABASE_URL);
 
 // Middleware
 app.use(

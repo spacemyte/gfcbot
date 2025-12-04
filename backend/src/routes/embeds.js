@@ -5,18 +5,25 @@ const { supabase } = require("../index");
 // Get embed configs for a server
 router.get("/:serverId", async (req, res) => {
   try {
+    console.log("Fetching embeds for server:", req.params.serverId);
     const { data, error } = await supabase
       .from("embed_configs")
       .select("*")
       .eq("server_id", req.params.serverId)
       .order("priority", { ascending: true });
 
-    if (error) throw error;
+    if (error) {
+      console.error("Supabase error fetching embeds:", error);
+      throw error;
+    }
 
+    console.log("Embeds fetched successfully:", data);
     res.json(data);
   } catch (error) {
-    console.error("Error fetching embed configs:", error);
-    res.status(500).json({ error: "Failed to fetch embed configs" });
+    console.error("Error fetching embed configs:", error.message);
+    res
+      .status(500)
+      .json({ error: "Failed to fetch embed configs", details: error.message });
   }
 });
 
