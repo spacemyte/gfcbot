@@ -70,30 +70,38 @@ class InstagramEmbed(commands.Cog):
     async def on_message(self, message: discord.Message):
         """
         Listen for messages containing Instagram URLs.
-        
-        Args:
-            message: Discord message object
+        React with 👍 if the message already uses a configured prefix.
         """
         # Ignore bot messages
         if message.author.bot:
             return
-        
         # Ignore DMs
         if not message.guild:
             return
-        
         # Check for Instagram URLs
         urls = INSTAGRAM_URL_PATTERN.findall(message.content)
         if not urls:
             return
-        
+        # Get all embed configs for this server
+        embed_configs = await self.bot.db.get_embed_configs(message.guild.id)
+        prefixes = [c['prefix'] for c in embed_configs] if embed_configs else []
+        # Check if message already uses a configured prefix
+        already_embedded = False
+        for prefix in prefixes:
+            if f'https://{prefix}instagram.com/' in message.content or f'http://{prefix}instagram.com/' in message.content:
+                already_embedded = True
+                break
+        if already_embedded:
+            try:
+                await message.add_reaction('👍')
+            except Exception as e:
+                logger.warning(f'Failed to react to message: {e}')
+            return
         # Get original URL from message
         match = INSTAGRAM_URL_PATTERN.search(message.content)
         if not match:
             return
-        
         original_url = match.group(0)
-        
         # Add to validation queue
         await self.validation_queue.put({
             'message': message,
