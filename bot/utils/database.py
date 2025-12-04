@@ -96,13 +96,14 @@ class Database:
         embedded_url: Optional[str],
         embed_prefix_used: Optional[str],
         validation_status: str,
-        validation_error: Optional[str]
+        validation_error: Optional[str],
+        webhook_message_id: Optional[int] = None
     ):
         """
         Insert message transformation data.
         
         Args:
-            message_id: Discord message ID
+            message_id: Discord message ID (original message)
             channel_id: Discord channel ID
             server_id: Discord server ID
             user_id: Discord user ID
@@ -111,6 +112,7 @@ class Database:
             embed_prefix_used: Prefix that worked
             validation_status: 'success', 'failed', or 'timeout'
             validation_error: Error message if failed
+            webhook_message_id: ID of webhook message if reposted
         """
         await self.connect()
         async with self.pool.acquire() as conn:
@@ -119,15 +121,36 @@ class Database:
                 INSERT INTO message_data (
                     message_id, channel_id, server_id, user_id,
                     original_url, embedded_url, embed_prefix_used,
-                    validation_status, validation_error, checked_at
+                    validation_status, validation_error, checked_at, webhook_message_id
                 )
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
                 ON CONFLICT (message_id) DO NOTHING
                 """,
                 message_id, channel_id, server_id, user_id,
                 original_url, embedded_url, embed_prefix_used,
-                validation_status, validation_error, datetime.utcnow()
+                validation_status, validation_error, datetime.utcnow(), webhook_message_id
             )
+    
+    async def get_original_user_from_webhook(self, webhook_message_id: int) -> Optional[int]:
+        """
+        Get the original user ID from a webhook message ID.
+        
+        Args:
+            webhook_message_id: ID of the webhook message
+            
+        Returns:
+            Original user ID if found, None otherwise
+        """
+        await self.connect()
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                SELECT user_id FROM message_data 
+                WHERE webhook_message_id = $1
+                """,
+                webhook_message_id
+            )
+            return row['user_id'] if row else None
     
     async def insert_audit_log(
         self,

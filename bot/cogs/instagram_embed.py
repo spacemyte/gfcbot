@@ -82,6 +82,7 @@ class InstagramEmbed(commands.Cog):
         """
         Listen for messages containing Instagram URLs.
         React with 👍 if the message already uses a configured prefix.
+        Also detect replies to webhook messages and notify original poster.
         """
         # Ignore bot messages
         if message.author.bot:
@@ -89,6 +90,11 @@ class InstagramEmbed(commands.Cog):
         # Ignore DMs
         if not message.guild:
             return
+        
+        # Check if this is a reply to a webhook message
+        if message.reference and message.reference.message_id:
+            await self._handle_webhook_reply(message)
+        
         # Check for Instagram URLs
         urls = INSTAGRAM_URL_PATTERN.findall(message.content)
         if not urls:
@@ -123,6 +129,63 @@ class InstagramEmbed(commands.Cog):
             'original_url': original_url,
             'post_id': urls[0]
         })
+    
+    async def _handle_webhook_reply(self, message: discord.Message):
+        """
+        Handle replies to webhook messages by notifying the original poster.
+        """
+        if not message.reference or not message.reference.message_id:
+            return
+        
+        # Check if the replied-to message is a webhook message we track
+        webhook_message_id = message.reference.message_id
+        original_user_id = await self.bot.db.get_original_user_from_webhook(webhook_message_id)
+        
+        if not original_user_id:
+            # Not a tracked webhook message
+            return
+        
+        # Don't notify if replying to their own message
+        if message.author.id == original_user_id:
+            return
+        
+        try:
+            original_user = await self.bot.fetch_user(original_user_id)
+            if not original_user:
+                logger.warning(f'Could not fetch user {original_user_id} for reply notification')
+                return
+            
+            # Get channel mention safely
+            if hasattr(message.channel, 'mention'):
+                channel_name = message.channel.mention
+            else:
+                channel_name = f'#{getattr(message.channel, "name", "unknown")}'
+            
+            # Create embed for the notification
+            embed = discord.Embed(
+                title="💬 New Reply to Your Instagram Post",
+                description=f"{message.author.mention} replied to your Instagram embed in {channel_name}",
+                color=discord.Color.blue(),
+                timestamp=message.created_at
+            )
+            
+            # Add reply content (truncated if too long)
+            reply_content = message.content[:1000] if message.content else "*[No text content]*"
+            if len(message.content) > 1000:
+                reply_content += "..."
+            embed.add_field(name="Reply", value=reply_content, inline=False)
+            
+            # Add jump link
+            embed.add_field(name="Jump to Message", value=f"[Click here]({message.jump_url})", inline=False)
+            
+            # Send DM
+            await original_user.send(embed=embed)
+            logger.info(f'Notified user {original_user_id} about reply from {message.author.id}')
+            
+        except discord.Forbidden:
+            logger.warning(f'Could not DM user {original_user_id} (DMs disabled or blocked)')
+        except Exception as e:
+            logger.error(f'Failed to notify user {original_user_id} about reply: {e}')
     
     async def _validation_worker(self):
         """Background worker to process URL validation queue with delays."""
@@ -181,7 +244,7 @@ class InstagramEmbed(commands.Cog):
                     if webhook_mode and isinstance(message.channel, discord.TextChannel):
                         logger.info(f'Using webhook repost mode for message {message.id}')
                         try:
-                            await self._repost_with_webhook(message, embedded_url)
+                            webhook_msg = await self._repost_with_webhook(message, embedded_url)
                             await self.bot.db.insert_message_data(
                                 message_id=message.id,
                                 channel_id=message.channel.id,
@@ -191,7 +254,8 @@ class InstagramEmbed(commands.Cog):
                                 embedded_url=embedded_url,
                                 embed_prefix_used=prefix,
                                 validation_status='success',
-                                validation_error=None
+                                validation_error=None,
+                                webhook_message_id=webhook_msg.id
                             )
                             logger.info(f'Successfully reposted with webhook for prefix "{prefix}"')
                             return
@@ -254,6 +318,7 @@ class InstagramEmbed(commands.Cog):
     async def _repost_with_webhook(self, message: discord.Message, embedded_url: str):
         """
         Delete the original message and repost as the user using a webhook (only in text channels).
+        Returns the webhook message.
         """
         # Only allow in text channels
         if not isinstance(message.channel, discord.TextChannel):
@@ -290,12 +355,14 @@ class InstagramEmbed(commands.Cog):
                 logger.info(f'Created new webhook in channel {message.channel.id}')
             
             # Send message via webhook
-            await webhook.send(
+            webhook_msg = await webhook.send(
                 content=embedded_url,
                 username=message.author.display_name,
-                avatar_url=message.author.display_avatar.url
+                avatar_url=message.author.display_avatar.url,
+                wait=True
             )
             logger.info(f'Successfully reposted message via webhook with user {message.author.display_name}')
+            return webhook_msg
         except discord.Forbidden as e:
             logger.error(f"Missing 'Manage Webhooks' permission: {e}")
             raise
