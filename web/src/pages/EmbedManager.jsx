@@ -5,6 +5,7 @@ import axios from 'axios'
 
 const API_URL = import.meta.env.VITE_API_URL || ''
 
+export default function EmbedManager() {
   const { serverId } = useParams()
   const [embeds, setEmbeds] = useState([])
   const [loading, setLoading] = useState(true)
