@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import axios from 'axios'
 
+const API_URL = import.meta.env.VITE_API_URL || ''
+
 export default function AuditLogs() {
   const { serverId } = useParams()
   const [logs, setLogs] = useState([])
@@ -17,7 +19,7 @@ export default function AuditLogs() {
   const fetchLogs = async () => {
     try {
       const response = await axios.get(
-        `/api/audit-logs/${serverId}?limit=${limit}&offset=${page * limit}`
+        `${API_URL}/api/audit-logs/${serverId}?limit=${limit}&offset=${page * limit}`
       )
       setLogs(response.data.data)
       setTotalCount(response.data.count)

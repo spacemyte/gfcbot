@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom'
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import axios from 'axios'
 
+const API_URL = import.meta.env.VITE_API_URL || ''
+
 export default function EmbedManager() {
   const { serverId } = useParams()
   const [embeds, setEmbeds] = useState([])
@@ -18,7 +20,7 @@ export default function EmbedManager() {
 
   const fetchFeatureId = async () => {
     try {
-      const response = await axios.get('/api/features')
+      const response = await axios.get(`${API_URL}/api/features`)
       const instagramFeature = response.data.find(f => f.name === 'instagram_embed')
       if (instagramFeature) {
         setFeatureId(instagramFeature.id)
@@ -30,7 +32,7 @@ export default function EmbedManager() {
 
   const fetchEmbeds = async () => {
     try {
-      const response = await axios.get(`/api/embeds/${serverId}`)
+      const response = await axios.get(`${API_URL}/api/embeds/${serverId}`)
       setEmbeds(response.data)
     } catch (error) {
       console.error('Error fetching embeds:', error)
@@ -51,7 +53,7 @@ export default function EmbedManager() {
     // Update priority order in backend
     try {
       const embedIds = items.map(item => item.id)
-      await axios.post(`/api/embeds/${serverId}/reorder`, { embedIds })
+      await axios.post(`${API_URL}/api/embeds/${serverId}/reorder`, { embedIds })
     } catch (error) {
       console.error('Error reordering embeds:', error)
       fetchEmbeds() // Revert on error
@@ -63,7 +65,7 @@ export default function EmbedManager() {
     if (!newPrefix.trim() || !featureId) return
 
     try {
-      await axios.post(`/api/embeds/${serverId}`, {
+      await axios.post(`${API_URL}/api/embeds/${serverId}`, {
         prefix: newPrefix.trim(),
         feature_id: featureId,
         active: true,
@@ -80,7 +82,7 @@ export default function EmbedManager() {
 
   const handleToggleActive = async (embedId, currentActive) => {
     try {
-      await axios.put(`/api/embeds/${serverId}/${embedId}`, {
+      await axios.put(`${API_URL}/api/embeds/${serverId}/${embedId}`, {
         active: !currentActive
       })
       fetchEmbeds()
@@ -93,7 +95,7 @@ export default function EmbedManager() {
     if (!confirm('Are you sure you want to delete this embed prefix?')) return
 
     try {
-      await axios.delete(`/api/embeds/${serverId}/${embedId}`)
+      await axios.delete(`${API_URL}/api/embeds/${serverId}/${embedId}`)
       fetchEmbeds()
     } catch (error) {
       console.error('Error deleting embed:', error)

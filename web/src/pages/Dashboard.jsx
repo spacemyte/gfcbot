@@ -1,6 +1,16 @@
 import { Link } from 'react-router-dom'
 
 export default function Dashboard({ user }) {
+  // Filter to only show servers where user has MANAGE_GUILD permission (0x20)
+  // This typically means they can manage the bot
+  const manageableGuilds = user.guilds ? user.guilds.filter(guild => {
+    // Check if user has MANAGE_GUILD permission (bit 5 set)
+    const hasManageGuild = (guild.permissions & 0x20) === 0x20
+    // Or if user is admin (bit 3 set)
+    const isAdmin = (guild.permissions & 0x8) === 0x8
+    return hasManageGuild || isAdmin
+  }) : []
+
   return (
     <div className="space-y-8">
       <div>
@@ -9,8 +19,8 @@ export default function Dashboard({ user }) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {user.guilds && user.guilds.length > 0 ? (
-          user.guilds.map((guild) => (
+        {manageableGuilds.length > 0 ? (
+          manageableGuilds.map((guild) => (
             <Link
               key={guild.id}
               to={`/embeds/${guild.id}`}

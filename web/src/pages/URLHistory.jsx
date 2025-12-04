@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import axios from 'axios'
 
+const API_URL = import.meta.env.VITE_API_URL || ''
+
 export default function URLHistory() {
   const { serverId } = useParams()
   const [messages, setMessages] = useState([])
@@ -21,7 +23,7 @@ export default function URLHistory() {
     try {
       const statusParam = filter !== 'all' ? `&status=${filter}` : ''
       const response = await axios.get(
-        `/api/messages/${serverId}?limit=${limit}&offset=${page * limit}${statusParam}`
+        `${API_URL}/api/messages/${serverId}?limit=${limit}&offset=${page * limit}${statusParam}`
       )
       setMessages(response.data.data)
       setTotalCount(response.data.count)
@@ -34,7 +36,7 @@ export default function URLHistory() {
 
   const fetchStats = async () => {
     try {
-      const response = await axios.get(`/api/messages/${serverId}/stats`)
+      const response = await axios.get(`${API_URL}/api/messages/${serverId}/stats`)
       setStats(response.data)
     } catch (error) {
       console.error('Error fetching stats:', error)

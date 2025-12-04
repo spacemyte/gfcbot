@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import axios from 'axios'
 
+const API_URL = import.meta.env.VITE_API_URL || ''
+
 export default function Settings() {
   const { serverId } = useParams()
   const [pruningConfig, setPruningConfig] = useState({
@@ -18,7 +20,7 @@ export default function Settings() {
 
   const fetchConfig = async () => {
     try {
-      const response = await axios.get(`/api/pruning/${serverId}`)
+      const response = await axios.get(`${API_URL}/api/pruning/${serverId}`)
       setPruningConfig(response.data)
     } catch (error) {
       console.error('Error fetching pruning config:', error)
@@ -33,7 +35,7 @@ export default function Settings() {
     setMessage(null)
 
     try {
-      await axios.put(`/api/pruning/${serverId}`, pruningConfig)
+      await axios.put(`${API_URL}/api/pruning/${serverId}`, pruningConfig)
       setMessage({ type: 'success', text: 'Settings saved successfully!' })
     } catch (error) {
       console.error('Error saving config:', error)
