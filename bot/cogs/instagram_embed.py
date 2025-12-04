@@ -125,10 +125,10 @@ class InstagramEmbed(commands.Cog):
             is_valid, error = await self._validate_url(embedded_url)
             
             if is_valid:
-                # Success! Edit the message
+                # Success! Send a reply with the embedded URL
                 try:
                     new_content = message.content.replace(original_url, embedded_url)
-                    await message.edit(content=new_content)
+                    await message.reply(new_content, mention_author=False)
                     
                     # Log success to database
                     await self.bot.db.insert_message_data(
@@ -147,10 +147,10 @@ class InstagramEmbed(commands.Cog):
                     return
                     
                 except discord.Forbidden:
-                    logger.error(f'Missing permissions to edit message {message.id}')
+                    logger.error(f'Missing permissions to send message in channel {message.channel.id}')
                     break
                 except discord.HTTPException as e:
-                    logger.error(f'Failed to edit message: {e}')
+                    logger.error(f'Failed to send reply: {e}')
                     break
             else:
                 logger.warning(f'Prefix "{prefix}" failed: {error}')
