@@ -30,10 +30,10 @@ class InstagramEmbed(commands.Cog):
     async def get_instagram_embed_config(self, guild_id: int) -> Dict:
         if not self.session:
             self.session = aiohttp.ClientSession()
-        # Cache for 5 minutes per guild
+        # Cache for 60 seconds per guild (faster config updates)
         now = datetime.utcnow().timestamp()
         cache_entry = self.config_cache.get(guild_id)
-        if cache_entry and (now - cache_entry.get('fetched_at', 0) < 300):
+        if cache_entry and (now - cache_entry.get('fetched_at', 0) < 60):
             return cache_entry['config']
         # Fetch from bot-accessible endpoint (no auth required)
         url = f"{self.api_url}/api/bot/instagram-embed-config/{guild_id}"
@@ -60,6 +60,16 @@ class InstagramEmbed(commands.Cog):
         # Start validation worker
         self.bot.loop.create_task(self._validation_worker())
         logger.info('Instagram embed cog loaded')
+    
+    def clear_config_cache(self, guild_id: Optional[int] = None):
+        """Clear the config cache for a guild or all guilds."""
+        if guild_id:
+            if guild_id in self.config_cache:
+                del self.config_cache[guild_id]
+                logger.info(f'Cleared Instagram embed config cache for guild {guild_id}')
+        else:
+            self.config_cache.clear()
+            logger.info('Cleared Instagram embed config cache for all guilds')
     
     async def cog_unload(self):
         """Clean up aiohttp session when cog unloads."""
