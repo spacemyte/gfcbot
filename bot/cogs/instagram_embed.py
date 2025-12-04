@@ -93,6 +93,7 @@ class InstagramEmbed(commands.Cog):
         
         # Check if this is a reply to a webhook message
         if message.reference and message.reference.message_id:
+            logger.info(f'Detected reply from {message.author.id} to message {message.reference.message_id}')
             await self._handle_webhook_reply(message)
         
         # Check for Instagram URLs
@@ -141,8 +142,11 @@ class InstagramEmbed(commands.Cog):
         webhook_message_id = message.reference.message_id
         original_user_id = await self.bot.db.get_original_user_from_webhook(webhook_message_id)
         
+        logger.info(f'Lookup webhook message {webhook_message_id}: original_user_id={original_user_id}')
+        
         if not original_user_id:
             # Not a tracked webhook message
+            logger.info(f'Message {webhook_message_id} is not a tracked webhook message')
             return
         
         # Don't notify if replying to their own message
@@ -357,11 +361,11 @@ class InstagramEmbed(commands.Cog):
             # Send message via webhook
             webhook_msg = await webhook.send(
                 content=embedded_url,
-                username=message.author.display_name,
+                username=f"{message.author.display_name} (GFC Bot)",
                 avatar_url=message.author.display_avatar.url,
                 wait=True
             )
-            logger.info(f'Successfully reposted message via webhook with user {message.author.display_name}')
+            logger.info(f'Successfully reposted message via webhook with user {message.author.display_name} (GFC Bot)')
             return webhook_msg
         except discord.Forbidden as e:
             logger.error(f"Missing 'Manage Webhooks' permission: {e}")
