@@ -30,8 +30,7 @@ bot = commands.Bot(
 
 # Initialize database and feature manager
 db = Database(
-    supabase_url=os.getenv('SUPABASE_URL'),
-    supabase_key=os.getenv('SUPABASE_KEY')
+    database_url=os.getenv('DATABASE_URL')
 )
 
 feature_manager = FeatureManager(

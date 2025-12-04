@@ -9,23 +9,14 @@ logger = logging.getLogger('gfcbot.database')
 class Database:
     """Database interface for GFC Bot using asyncpg."""
     
-    def __init__(self, supabase_url: str, supabase_key: str):
+    def __init__(self, database_url: str):
         """
         Initialize database connection.
         
         Args:
-            supabase_url: Supabase project URL
-            supabase_key: Supabase service role key
+            database_url: PostgreSQL connection string (from Supabase)
         """
-        # Extract database connection info from Supabase URL
-        # Supabase URL format: https://<project-ref>.supabase.co
-        project_ref = supabase_url.replace('https://', '').replace('.supabase.co', '')
-        
-        # Construct PostgreSQL connection string
-        self.connection_string = (
-            f"postgresql://postgres:{supabase_key}@"
-            f"db.{project_ref}.supabase.co:5432/postgres"
-        )
+        self.connection_string = database_url
         self.pool: Optional[asyncpg.Pool] = None
     
     async def connect(self):
