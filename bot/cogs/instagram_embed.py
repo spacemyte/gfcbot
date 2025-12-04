@@ -51,7 +51,8 @@ class InstagramEmbed(commands.Cog):
         return {
             'webhook_repost_enabled': False,
             'pruning_enabled': True,
-            'pruning_max_days': 90
+            'pruning_max_days': 90,
+            'notify_self_replies': False
         }
         
     async def cog_load(self):
@@ -149,9 +150,13 @@ class InstagramEmbed(commands.Cog):
             logger.info(f'Message {webhook_message_id} is not a tracked webhook message')
             return
         
-        # Don't notify if replying to their own message
-        if message.author.id == original_user_id:
-            logger.info(f'User {message.author.id} replied to their own webhook message, skipping notification')
+        # Get the server config to check notify_self_replies setting
+        config = await self.get_instagram_embed_config(message.guild.id)
+        notify_self = config.get('notify_self_replies', False)
+        
+        # Don't notify if replying to their own message (unless notify_self_replies is enabled)
+        if message.author.id == original_user_id and not notify_self:
+            logger.info(f'User {message.author.id} replied to their own webhook message, skipping notification (notify_self_replies={notify_self})')
             return
         
         try:

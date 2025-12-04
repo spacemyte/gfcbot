@@ -212,6 +212,18 @@ export default function EmbedManager() {
                 Enable automatic data pruning
               </label>
             </div>
+            <div className="flex items-center space-x-3">
+              <input
+                type="checkbox"
+                id="notify-self-replies"
+                checked={embedConfig.notify_self_replies}
+                onChange={e => handleConfigChange('notify_self_replies', e.target.checked)}
+                className="w-5 h-5 text-discord-blue bg-discord-bg border-gray-600 rounded focus:ring-discord-blue"
+              />
+              <label htmlFor="notify-self-replies" className="text-white">
+                Notify me when I reply to my own webhook post (testing)
+              </label>
+            </div>
             {embedConfig.pruning_enabled && (
               <div>
                 <label className="block text-gray-300 mb-2">
