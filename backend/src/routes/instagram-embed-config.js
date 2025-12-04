@@ -10,7 +10,13 @@ router.get("/:serverId", async (req, res) => {
       [req.params.serverId]
     );
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Config not found" });
+      // Return defaults if no config exists yet
+      return res.json({
+        server_id: req.params.serverId,
+        webhook_repost_enabled: false,
+        pruning_enabled: true,
+        pruning_max_days: 90
+      });
     }
     res.json(result.rows[0]);
   } catch (error) {
@@ -22,6 +28,9 @@ router.get("/:serverId", async (req, res) => {
 // Upsert Instagram embed config for a server
 router.put("/:serverId", async (req, res) => {
   try {
+    console.log("Updating Instagram embed config for server:", req.params.serverId);
+    console.log("Request body:", req.body);
+    
     const { webhook_repost_enabled, pruning_enabled, pruning_max_days } =
       req.body;
     const existing = await db.query(

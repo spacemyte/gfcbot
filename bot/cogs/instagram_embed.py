@@ -10,9 +10,9 @@ from datetime import datetime
 
 logger = logging.getLogger('gfcbot.instagram_embed')
 
-# Instagram URL pattern
+# Instagram URL pattern - matches both regular and prefixed Instagram URLs
 INSTAGRAM_URL_PATTERN = re.compile(
-    r'https?://(?:www\.)?instagram\.com/(?:p|reel|reels|tv)/([a-zA-Z0-9_-]+)/?',
+    r'https?://(?:www\.)?(?:[a-z]{2,5})?instagram\.com/(?:p|reel|reels|tv)/([a-zA-Z0-9_-]+)/?',
     re.IGNORECASE
 )
 
@@ -83,26 +83,30 @@ class InstagramEmbed(commands.Cog):
         urls = INSTAGRAM_URL_PATTERN.findall(message.content)
         if not urls:
             return
-        # Get all embed configs for this server
-        embed_configs = await self.bot.db.get_embed_configs(message.guild.id)
-        prefixes = [c['prefix'] for c in embed_configs] if embed_configs else []
-        # Check if message already uses a configured prefix
-        already_embedded = False
-        for prefix in prefixes:
-            if f'https://{prefix}instagram.com/' in message.content or f'http://{prefix}instagram.com/' in message.content:
-                already_embedded = True
-                break
-        if already_embedded:
-            try:
-                await message.add_reaction('👍')
-            except Exception as e:
-                logger.warning(f'Failed to react to message: {e}')
-            return
         # Get original URL from message
         match = INSTAGRAM_URL_PATTERN.search(message.content)
         if not match:
             return
         original_url = match.group(0)
+        
+        # Get all embed configs for this server
+        embed_configs = await self.bot.db.get_embed_configs(message.guild.id)
+        prefixes = [c['prefix'] for c in embed_configs] if embed_configs else []
+        
+        # Check if URL already uses a configured prefix
+        already_embedded = False
+        for prefix in prefixes:
+            if f'{prefix}instagram.com' in original_url.lower():
+                already_embedded = True
+                break
+        
+        if already_embedded:
+            try:
+                await message.add_reaction('👍')
+                logger.info(f'Reacted with thumbs up to already-embedded URL: {original_url}')
+            except Exception as e:
+                logger.warning(f'Failed to react to message: {e}')
+            return
         # Add to validation queue
         await self.validation_queue.put({
             'message': message,
