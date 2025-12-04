@@ -43,10 +43,12 @@ This guide covers deploying GFC Bot to Railway with Supabase database.
 The Discord callback URL is where Discord redirects users after they log in. Here's how to find it:
 
 **During Development (Local):**
+
 - Set to: `http://localhost:3001/auth/discord/callback`
 - In `.env` (backend): `DISCORD_CALLBACK_URL=http://localhost:3001/auth/discord/callback`
 
 **After Deploying Backend to Railway:**
+
 1. Go to Railway dashboard → your project → backend service
 2. Look for "Deployments" tab → latest deployment
 3. Copy the "Service Domain" (looks like `xxx-production.up.railway.app` or similar)
@@ -54,6 +56,7 @@ The Discord callback URL is where Discord redirects users after they log in. Her
 5. Update this in Discord Developer Portal → OAuth2 → Redirects
 
 **Finding Your Railway Service Domain:**
+
 - Railway Dashboard → Projects → select your project
 - Backend service card → look for a link/domain icon
 - If no custom domain, it auto-generates one after first deployment
@@ -203,18 +206,21 @@ The `.github/workflows/deploy.yml` file is already configured. To enable:
 - **Total: ~$5/month**
 
 **Railway-Only Alternative:**
+
 - If deploying web dashboard to Railway instead of Vercel, cost stays ~$5/month
 - Railway handles all three services (bot, backend, web)
 
 ## All-Railway Deployment vs Railway + Vercel
 
 ### **All Railway (Recommended for cost):**
+
 - Deploy bot, backend, AND web all to Railway
 - Total: ~$5/month
 - No external dependencies
 - Slightly slower React performance vs Vercel
 
 ### **Railway + Vercel (Recommended for performance):**
+
 - Deploy bot & backend to Railway (~$5/month)
 - Deploy web to Vercel (free tier)
 - Best React performance with edge caching
@@ -223,6 +229,7 @@ The `.github/workflows/deploy.yml` file is already configured. To enable:
 ## Environment Variables by Deployment Option
 
 ### **Backend (.env) - Always Required:**
+
 ```
 PORT=3001
 NODE_ENV=production
@@ -241,6 +248,7 @@ FRONTEND_URL=https://your-web-domain-here
   - Used for CORS, so requests from your frontend are allowed
 
 ### **Web (.env or Vite config) - Always Required:**
+
 ```
 VITE_API_URL=https://your-backend-domain.up.railway.app
 ```
@@ -248,6 +256,7 @@ VITE_API_URL=https://your-backend-domain.up.railway.app
 - No changes needed if deploying to either Vercel or Railway
 
 ### **Bot (.env) - Always Required:**
+
 ```
 DISCORD_TOKEN=your_bot_token
 DISCORD_CLIENT_ID=your_client_id
