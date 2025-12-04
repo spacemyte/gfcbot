@@ -33,7 +33,31 @@ This guide covers deploying GFC Bot to Railway with Supabase database.
    - Enable "Server Members Intent"
 4. Go to "OAuth2" section:
    - Copy Client ID and Client Secret
-   - Add redirect URL: `https://your-backend-url.up.railway.app/auth/discord/callback`
+   - Add redirect URL (see Step 3 first for your backend URL):
+     - If using Railway for backend: `https://your-backend-url.up.railway.app/auth/discord/callback`
+     - Replace `your-backend-url` with your Railway service name or domain
+     - You'll update this after deploying backend and getting the actual URL
+
+## Step 2.5: Understanding Discord Callback URL
+
+The Discord callback URL is where Discord redirects users after they log in. Here's how to find it:
+
+**During Development (Local):**
+- Set to: `http://localhost:3001/auth/discord/callback`
+- In `.env` (backend): `DISCORD_CALLBACK_URL=http://localhost:3001/auth/discord/callback`
+
+**After Deploying Backend to Railway:**
+1. Go to Railway dashboard → your project → backend service
+2. Look for "Deployments" tab → latest deployment
+3. Copy the "Service Domain" (looks like `xxx-production.up.railway.app` or similar)
+4. Your callback URL will be: `https://[your-service-domain]/auth/discord/callback`
+5. Update this in Discord Developer Portal → OAuth2 → Redirects
+
+**Finding Your Railway Service Domain:**
+- Railway Dashboard → Projects → select your project
+- Backend service card → look for a link/domain icon
+- If no custom domain, it auto-generates one after first deployment
+- Click the service to see "Deployments" → active deployment shows the domain
 
 ## Step 3: Deploy to Railway
 
@@ -75,9 +99,22 @@ This guide covers deploying GFC Bot to Railway with Supabase database.
 5. Set working directory: `backend`
 6. Enable public networking and copy the URL
 
-### Deploy Web Dashboard (Vercel Alternative)
+### Deploy Web Dashboard (Railway Alternative)
 
-The web dashboard can be deployed to Vercel for better React app hosting:
+You can deploy the web dashboard to Railway instead of Vercel:
+
+1. In the same Railway project, click "Add Service"
+2. Select the same GitHub repo
+3. Configure environment variables:
+   ```
+   PORT=3000
+   VITE_API_URL=https://your-backend-url.up.railway.app
+   ```
+4. Set the start command: `npm run preview` (or `npm run build && npm preview`)
+5. Set working directory: `web`
+6. Enable public networking and copy the URL (this becomes your FRONTEND_URL)
+
+**Or use Vercel (Recommended for React):**
 
 1. Go to https://vercel.com
 2. Import your gfcbot repository
@@ -90,12 +127,15 @@ The web dashboard can be deployed to Vercel for better React app hosting:
    ```
    VITE_API_URL=https://your-backend-url.up.railway.app
    ```
-5. Deploy
+5. Deploy and copy your Vercel URL (this becomes your FRONTEND_URL)
 
 ## Step 4: Update Discord OAuth Redirect
 
 1. Go back to Discord Developer Portal
-2. Update OAuth2 redirect URL to your actual backend URL
+2. Update OAuth2 redirect URL to your actual backend Railway URL:
+   - Find your backend service in Railway dashboard
+   - Copy the public domain (looks like `your-service-xxx.up.railway.app`)
+   - Set redirect URL to: `https://your-service-xxx.up.railway.app/auth/discord/callback`
 3. Save changes
 
 ## Step 5: Invite Bot to Server
@@ -161,6 +201,65 @@ The `.github/workflows/deploy.yml` file is already configured. To enable:
 - Supabase: Free tier (sufficient for small servers)
 - Vercel: Free tier (sufficient for dashboard)
 - **Total: ~$5/month**
+
+**Railway-Only Alternative:**
+- If deploying web dashboard to Railway instead of Vercel, cost stays ~$5/month
+- Railway handles all three services (bot, backend, web)
+
+## All-Railway Deployment vs Railway + Vercel
+
+### **All Railway (Recommended for cost):**
+- Deploy bot, backend, AND web all to Railway
+- Total: ~$5/month
+- No external dependencies
+- Slightly slower React performance vs Vercel
+
+### **Railway + Vercel (Recommended for performance):**
+- Deploy bot & backend to Railway (~$5/month)
+- Deploy web to Vercel (free tier)
+- Best React performance with edge caching
+- Total: ~$5/month
+
+## Environment Variables by Deployment Option
+
+### **Backend (.env) - Always Required:**
+```
+PORT=3001
+NODE_ENV=production
+DISCORD_CLIENT_ID=your_client_id
+DISCORD_CLIENT_SECRET=your_client_secret
+DISCORD_CALLBACK_URL=https://your-backend-domain.up.railway.app/auth/discord/callback
+SUPABASE_URL=your_supabase_url
+SUPABASE_KEY=your_supabase_service_role_key
+SESSION_SECRET=generate_random_string
+FRONTEND_URL=https://your-web-domain-here
+```
+
+- `FRONTEND_URL` should be:
+  - If web on Vercel: `https://your-vercel-app.vercel.app`
+  - If web on Railway: `https://your-web-service.up.railway.app`
+  - Used for CORS, so requests from your frontend are allowed
+
+### **Web (.env or Vite config) - Always Required:**
+```
+VITE_API_URL=https://your-backend-domain.up.railway.app
+```
+
+- No changes needed if deploying to either Vercel or Railway
+
+### **Bot (.env) - Always Required:**
+```
+DISCORD_TOKEN=your_bot_token
+DISCORD_CLIENT_ID=your_client_id
+SUPABASE_URL=your_supabase_url
+SUPABASE_KEY=your_supabase_service_role_key
+ENVIRONMENT=production
+ENABLE_PERMISSION_CACHE=true
+COMMAND_PREFIX=!
+```
+
+- `ENABLE_PERMISSION_CACHE=true` for production (caches permissions 15 minutes)
+- `ENABLE_PERMISSION_CACHE=false` for development (immediate permission updates)
 
 ## Support
 
