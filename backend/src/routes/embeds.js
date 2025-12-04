@@ -1,24 +1,18 @@
 const express = require("express");
 const router = express.Router();
-const { supabase } = require("../supabase");
+const { db } = require("../supabase");
 
 // Get embed configs for a server
 router.get("/:serverId", async (req, res) => {
   try {
     console.log("Fetching embeds for server:", req.params.serverId);
-    const { data, error } = await supabase
-      .from("embed_configs")
-      .select("*")
-      .eq("server_id", req.params.serverId)
-      .order("priority", { ascending: true });
+    const result = await db.query(
+      "SELECT * FROM embed_configs WHERE server_id = $1 ORDER BY priority ASC",
+      [req.params.serverId]
+    );
 
-    if (error) {
-      console.error("Supabase error fetching embeds:", error);
-      throw error;
-    }
-
-    console.log("Embeds fetched successfully:", data);
-    res.json(data);
+    console.log("Embeds fetched successfully:", result.rows);
+    res.json(result.rows);
   } catch (error) {
     console.error("Error fetching embed configs:", error.message);
     res
@@ -32,29 +26,36 @@ router.post("/:serverId", async (req, res) => {
   try {
     const { prefix, active, priority, feature_id } = req.body;
 
-    const { data, error } = await supabase
-      .from("embed_configs")
-      .insert({
-        server_id: req.params.serverId,
+    const result = await db.query(
+      `INSERT INTO embed_configs (server_id, feature_id, prefix, active, priority)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [
+        req.params.serverId,
         feature_id,
         prefix,
-        active: active !== undefined ? active : true,
-        priority: priority || 0,
-      })
-      .select()
-      .single();
+        active !== undefined ? active : true,
+        priority || 0,
+      ]
+    );
 
-    if (error) throw error;
+    const data = result.rows[0];
 
     // Log audit trail
-    await supabase.from("audit_logs").insert({
-      server_id: req.params.serverId,
-      user_id: req.user.id,
-      action: "embed_created",
-      target_type: "embed_config",
-      target_id: data.id,
-      details: { prefix, active, priority },
-    });
+    if (req.user) {
+      await db.query(
+        `INSERT INTO audit_logs (server_id, user_id, action, target_type, target_id, details)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [
+          req.params.serverId,
+          req.user.id,
+          "embed_created",
+          "embed_config",
+          data.id,
+          JSON.stringify({ prefix, active, priority }),
+        ]
+      );
+    }
 
     res.json(data);
   } catch (error) {
@@ -68,30 +69,58 @@ router.put("/:serverId/:id", async (req, res) => {
   try {
     const { prefix, active, priority } = req.body;
 
-    const updateData = {};
-    if (prefix !== undefined) updateData.prefix = prefix;
-    if (active !== undefined) updateData.active = active;
-    if (priority !== undefined) updateData.priority = priority;
+    const updates = [];
+    const values = [];
+    let paramCount = 1;
 
-    const { data, error } = await supabase
-      .from("embed_configs")
-      .update(updateData)
-      .eq("id", req.params.id)
-      .eq("server_id", req.params.serverId)
-      .select()
-      .single();
+    if (prefix !== undefined) {
+      updates.push(`prefix = $${paramCount++}`);
+      values.push(prefix);
+    }
+    if (active !== undefined) {
+      updates.push(`active = $${paramCount++}`);
+      values.push(active);
+    }
+    if (priority !== undefined) {
+      updates.push(`priority = $${paramCount++}`);
+      values.push(priority);
+    }
 
-    if (error) throw error;
+    if (updates.length === 0) {
+      return res.status(400).json({ error: "No fields to update" });
+    }
+
+    values.push(req.params.id, req.params.serverId);
+
+    const result = await db.query(
+      `UPDATE embed_configs 
+       SET ${updates.join(", ")}, updated_at = NOW()
+       WHERE id = $${paramCount++} AND server_id = $${paramCount}
+       RETURNING *`,
+      values
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Embed config not found" });
+    }
+
+    const data = result.rows[0];
 
     // Log audit trail
-    await supabase.from("audit_logs").insert({
-      server_id: req.params.serverId,
-      user_id: req.user.id,
-      action: "embed_updated",
-      target_type: "embed_config",
-      target_id: req.params.id,
-      details: updateData,
-    });
+    if (req.user) {
+      await db.query(
+        `INSERT INTO audit_logs (server_id, user_id, action, target_type, target_id, details)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [
+          req.params.serverId,
+          req.user.id,
+          "embed_updated",
+          "embed_config",
+          req.params.id,
+          JSON.stringify({ prefix, active, priority }),
+        ]
+      );
+    }
 
     res.json(data);
   } catch (error) {
@@ -103,22 +132,29 @@ router.put("/:serverId/:id", async (req, res) => {
 // Delete embed config
 router.delete("/:serverId/:id", async (req, res) => {
   try {
-    const { error } = await supabase
-      .from("embed_configs")
-      .delete()
-      .eq("id", req.params.id)
-      .eq("server_id", req.params.serverId);
+    const result = await db.query(
+      "DELETE FROM embed_configs WHERE id = $1 AND server_id = $2 RETURNING *",
+      [req.params.id, req.params.serverId]
+    );
 
-    if (error) throw error;
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Embed config not found" });
+    }
 
     // Log audit trail
-    await supabase.from("audit_logs").insert({
-      server_id: req.params.serverId,
-      user_id: req.user.id,
-      action: "embed_deleted",
-      target_type: "embed_config",
-      target_id: req.params.id,
-    });
+    if (req.user) {
+      await db.query(
+        `INSERT INTO audit_logs (server_id, user_id, action, target_type, target_id)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [
+          req.params.serverId,
+          req.user.id,
+          "embed_deleted",
+          "embed_config",
+          req.params.id,
+        ]
+      );
+    }
 
     res.json({ success: true });
   } catch (error) {
@@ -134,22 +170,27 @@ router.post("/:serverId/reorder", async (req, res) => {
 
     // Update priority for each embed
     for (let i = 0; i < embedIds.length; i++) {
-      await supabase
-        .from("embed_configs")
-        .update({ priority: i })
-        .eq("id", embedIds[i])
-        .eq("server_id", req.params.serverId);
+      await db.query(
+        "UPDATE embed_configs SET priority = $1, updated_at = NOW() WHERE id = $2 AND server_id = $3",
+        [i, embedIds[i], req.params.serverId]
+      );
     }
 
     // Log audit trail
-    await supabase.from("audit_logs").insert({
-      server_id: req.params.serverId,
-      user_id: req.user.id,
-      action: "embeds_reordered",
-      target_type: "embed_config",
-      target_id: "bulk",
-      details: { embedIds },
-    });
+    if (req.user) {
+      await db.query(
+        `INSERT INTO audit_logs (server_id, user_id, action, target_type, target_id, details)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [
+          req.params.serverId,
+          req.user.id,
+          "embeds_reordered",
+          "embed_config",
+          "bulk",
+          JSON.stringify({ embedIds }),
+        ]
+      );
+    }
 
     res.json({ success: true });
   } catch (error) {

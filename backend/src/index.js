@@ -1,8 +1,13 @@
 require("dotenv").config();
 
 // Check required environment variables
-if (!process.env.DATABASE_URL && (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY)) {
-  console.error("ERROR: DATABASE_URL or (SUPABASE_URL + SUPABASE_KEY) must be set!");
+if (
+  !process.env.DATABASE_URL &&
+  (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY)
+) {
+  console.error(
+    "ERROR: DATABASE_URL or (SUPABASE_URL + SUPABASE_KEY) must be set!"
+  );
   process.exit(1);
 }
 
