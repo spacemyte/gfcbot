@@ -16,14 +16,28 @@ class Database:
         Args:
             database_url: PostgreSQL connection string (from Supabase)
         """
+        if not database_url:
+            raise ValueError("DATABASE_URL environment variable is not set!")
         self.connection_string = database_url
+        # Log connection details (without password)
+        if "://" in database_url:
+            parts = database_url.split("@")
+            if len(parts) > 1:
+                logger.info(f"Initializing database connection to: {parts[-1]}")
+            else:
+                logger.info("Initializing database connection")
         self.pool: Optional[asyncpg.Pool] = None
     
     async def connect(self):
         """Create database connection pool."""
         if not self.pool:
-            self.pool = await asyncpg.create_pool(self.connection_string)
-            logger.info('Database connection pool created')
+            try:
+                logger.info(f"Attempting to connect to database with connection string...")
+                self.pool = await asyncpg.create_pool(self.connection_string)
+                logger.info('Database connection pool created successfully')
+            except Exception as e:
+                logger.error(f"Failed to create database connection pool: {e}")
+                raise
     
     async def close(self):
         """Close database connection pool."""

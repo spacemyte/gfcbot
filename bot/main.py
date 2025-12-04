@@ -29,8 +29,14 @@ bot = commands.Bot(
 )
 
 # Initialize database and feature manager
+database_url = os.getenv('DATABASE_URL')
+if not database_url:
+    logger.error("DATABASE_URL environment variable is not set!")
+    raise ValueError("DATABASE_URL environment variable is required but not set!")
+    
+logger.info(f"DATABASE_URL environment variable found")
 db = Database(
-    database_url=os.getenv('DATABASE_URL')
+    database_url=database_url
 )
 
 feature_manager = FeatureManager(
