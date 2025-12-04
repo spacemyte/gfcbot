@@ -361,11 +361,11 @@ class InstagramEmbed(commands.Cog):
             # Send message via webhook
             webhook_msg = await webhook.send(
                 content=embedded_url,
-                username=f"{message.author.display_name} (GFC Bot)",
+                username=f"{message.author.display_name} (via GFC Bot)",
                 avatar_url=message.author.display_avatar.url,
                 wait=True
             )
-            logger.info(f'Successfully reposted message via webhook with user {message.author.display_name} (GFC Bot)')
+            logger.info(f'Successfully reposted message via webhook with user {message.author.display_name} (via GFC Bot)')
             return webhook_msg
         except discord.Forbidden as e:
             logger.error(f"Missing 'Manage Webhooks' permission: {e}")
