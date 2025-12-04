@@ -125,8 +125,12 @@ class InstagramEmbed(commands.Cog):
             is_valid, error = await self._validate_url(embedded_url)
             
             if is_valid:
-                # Success! Send a reply with the embedded URL
+                # Success! Suppress the original embed and send a reply with the embedded URL
                 try:
+                    # Suppress embeds on the original message
+                    await message.edit(suppress=True)
+                    
+                    # Send reply with embedded URL
                     new_content = message.content.replace(original_url, embedded_url)
                     await message.reply(new_content, mention_author=False)
                     
@@ -147,10 +151,17 @@ class InstagramEmbed(commands.Cog):
                     return
                     
                 except discord.Forbidden:
-                    logger.error(f'Missing permissions to send message in channel {message.channel.id}')
-                    break
+                    logger.error(f'Missing permissions to suppress embeds or send message in channel {message.channel.id}')
+                    # Try to at least send the reply even if we can't suppress
+                    try:
+                        new_content = message.content.replace(original_url, embedded_url)
+                        await message.reply(new_content, mention_author=False)
+                        logger.info(f'Sent reply but could not suppress original embed')
+                        return
+                    except:
+                        break
                 except discord.HTTPException as e:
-                    logger.error(f'Failed to send reply: {e}')
+                    logger.error(f'Failed to suppress embed or send reply: {e}')
                     break
             else:
                 logger.warning(f'Prefix "{prefix}" failed: {error}')
