@@ -3,9 +3,14 @@ const { Pool } = require("pg");
 // Support both Supabase (SUPABASE_URL/SUPABASE_KEY) and direct PostgreSQL (DATABASE_URL)
 let db;
 
+console.log("Supabase initialization - checking environment variables...");
+console.log("DATABASE_URL set:", !!process.env.DATABASE_URL);
+console.log("SUPABASE_URL set:", !!process.env.SUPABASE_URL);
+console.log("SUPABASE_KEY set:", !!process.env.SUPABASE_KEY);
+
 if (process.env.DATABASE_URL) {
   // Using direct PostgreSQL connection (Railway)
-  console.log("Initializing PostgreSQL connection pool");
+  console.log("✓ Using Railway PostgreSQL connection pool");
   db = new Pool({
     connectionString: process.env.DATABASE_URL,
   });
@@ -13,10 +18,10 @@ if (process.env.DATABASE_URL) {
   // Test the connection
   db.query("SELECT NOW()")
     .then(() =>
-      console.log("PostgreSQL connection pool initialized successfully")
+      console.log("✓ PostgreSQL connection pool initialized successfully")
     )
     .catch((err) => {
-      console.error("PostgreSQL connection error:", err);
+      console.error("✗ PostgreSQL connection error:", err);
       process.exit(1);
     });
 } else if (process.env.SUPABASE_URL && process.env.SUPABASE_KEY) {
@@ -27,7 +32,7 @@ if (process.env.DATABASE_URL) {
     process.env.SUPABASE_KEY
   );
   console.log(
-    "Supabase client initialized with URL:",
+    "✓ Using Supabase client with URL:",
     process.env.SUPABASE_URL
   );
 
@@ -36,14 +41,14 @@ if (process.env.DATABASE_URL) {
     query: async (text, params) => {
       // This is a simplified wrapper - routes would need updating for full compatibility
       throw new Error(
-        "Supabase mode requires DATABASE_URL for query() support"
+        "ERROR: Supabase mode detected but routes use db.query() which requires DATABASE_URL. Add DATABASE_URL to environment variables."
       );
     },
     supabase, // Keep for routes that still use .from() syntax
   };
 } else {
   console.error(
-    "ERROR: Either DATABASE_URL or both SUPABASE_URL and SUPABASE_KEY must be set!"
+    "✗ ERROR: Either DATABASE_URL or both SUPABASE_URL and SUPABASE_KEY must be set!"
   );
   process.exit(1);
 }
