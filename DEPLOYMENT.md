@@ -238,14 +238,21 @@ DISCORD_CLIENT_SECRET=your_client_secret
 DISCORD_CALLBACK_URL=https://your-backend-domain.up.railway.app/auth/discord/callback
 SUPABASE_URL=your_supabase_url
 SUPABASE_KEY=your_supabase_service_role_key
-SESSION_SECRET=generate_random_string
+SESSION_SECRET=your_session_secret_here
 FRONTEND_URL=https://your-web-domain-here
 ```
 
-- `FRONTEND_URL` should be:
+- `SESSION_SECRET`: Generate a random string (minimum 32 characters recommended)
+
+  - Use: `openssl rand -base64 32` (generates a 32-byte base64 string)
+  - Or use any random generator for at least 32 alphanumeric characters
+  - Keep this secret and don't commit it to git
+  - Used to sign session cookies for user authentication
+
+- `FRONTEND_URL`: The URL where your web dashboard is hosted (required for CORS)
   - If web on Vercel: `https://your-vercel-app.vercel.app`
   - If web on Railway: `https://your-web-service.up.railway.app`
-  - Used for CORS, so requests from your frontend are allowed
+  - Allows requests from your frontend to reach the backend API
 
 ### **Web (.env or Vite config) - Always Required:**
 
