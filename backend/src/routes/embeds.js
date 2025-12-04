@@ -25,7 +25,7 @@ router.get("/:serverId", async (req, res) => {
 router.post("/:serverId", async (req, res) => {
   try {
     const { prefix, active, priority, feature_id } = req.body;
-    
+
     console.log("Creating embed config:", {
       serverId: req.params.serverId,
       prefix,
@@ -35,10 +35,14 @@ router.post("/:serverId", async (req, res) => {
     });
 
     if (!db.query) {
-      console.error("ERROR: db.query is not a function. db object:", Object.keys(db));
-      return res.status(500).json({ 
-        error: "Failed to create embed config", 
-        details: "Database not properly initialized - db.query is not available" 
+      console.error(
+        "ERROR: db.query is not a function. db object:",
+        Object.keys(db)
+      );
+      return res.status(500).json({
+        error: "Failed to create embed config",
+        details:
+          "Database not properly initialized - db.query is not available",
       });
     }
 
@@ -76,7 +80,9 @@ router.post("/:serverId", async (req, res) => {
     res.json(data);
   } catch (error) {
     console.error("Error creating embed config:", error);
-    res.status(500).json({ error: "Failed to create embed config", details: error.message });
+    res
+      .status(500)
+      .json({ error: "Failed to create embed config", details: error.message });
   }
 });
 

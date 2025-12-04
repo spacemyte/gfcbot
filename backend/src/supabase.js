@@ -11,6 +11,13 @@ console.log("SUPABASE_KEY set:", !!process.env.SUPABASE_KEY);
 if (process.env.DATABASE_URL) {
   // Using direct PostgreSQL connection (Railway)
   console.log("✓ Using Railway PostgreSQL connection pool");
+
+  // Extract and log connection details (without password)
+  const urlObj = new URL(process.env.DATABASE_URL);
+  console.log(
+    `✓ Connecting to: ${urlObj.hostname}:${urlObj.port} database: ${urlObj.pathname}`
+  );
+
   db = new Pool({
     connectionString: process.env.DATABASE_URL,
   });
@@ -31,10 +38,7 @@ if (process.env.DATABASE_URL) {
     process.env.SUPABASE_URL,
     process.env.SUPABASE_KEY
   );
-  console.log(
-    "✓ Using Supabase client with URL:",
-    process.env.SUPABASE_URL
-  );
+  console.log("✓ Using Supabase client with URL:", process.env.SUPABASE_URL);
 
   // Create a wrapper to make Supabase work with PostgreSQL query interface
   db = {
@@ -54,5 +58,3 @@ if (process.env.DATABASE_URL) {
 }
 
 module.exports = { db };
-
-module.exports = { db, supabase: db.supabase };

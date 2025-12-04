@@ -6,9 +6,7 @@ const { db } = require("../supabase");
 router.get("/", async (req, res) => {
   try {
     console.log("Fetching features...");
-    const result = await db.query(
-      "SELECT * FROM features ORDER BY name ASC"
-    );
+    const result = await db.query("SELECT * FROM features ORDER BY name ASC");
 
     console.log("Features fetched successfully:", result.rows);
     res.json(result.rows);
@@ -23,10 +21,9 @@ router.get("/", async (req, res) => {
 // Get feature by ID
 router.get("/:id", async (req, res) => {
   try {
-    const result = await db.query(
-      "SELECT * FROM features WHERE id = $1",
-      [req.params.id]
-    );
+    const result = await db.query("SELECT * FROM features WHERE id = $1", [
+      req.params.id,
+    ]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Feature not found" });
