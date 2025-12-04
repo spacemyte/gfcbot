@@ -21,9 +21,13 @@ export default function EmbedManager() {
   const fetchFeatureId = async () => {
     try {
       const response = await axios.get(`${API_URL}/api/features`)
+      console.log('Features response:', response.data)
       const instagramFeature = response.data.find(f => f.name === 'instagram_embed')
+      console.log('Instagram feature:', instagramFeature)
       if (instagramFeature) {
         setFeatureId(instagramFeature.id)
+      } else {
+        console.warn('Instagram embed feature not found')
       }
     } catch (error) {
       console.error('Error fetching features:', error)
@@ -62,21 +66,38 @@ export default function EmbedManager() {
 
   const handleAddEmbed = async (e) => {
     e.preventDefault()
-    if (!newPrefix.trim() || !featureId) return
+    console.log('Add embed clicked. Feature ID:', featureId, 'New prefix:', newPrefix)
+    
+    if (!newPrefix.trim()) {
+      alert('Please enter a prefix')
+      return
+    }
+    
+    if (!featureId) {
+      alert('Feature ID not loaded. Please refresh the page.')
+      return
+    }
 
     try {
-      await axios.post(`${API_URL}/api/embeds/${serverId}`, {
+      console.log('Sending add embed request:', {
         prefix: newPrefix.trim(),
         feature_id: featureId,
         active: true,
         priority: embeds.length
       })
+      const response = await axios.post(`${API_URL}/api/embeds/${serverId}`, {
+        prefix: newPrefix.trim(),
+        feature_id: featureId,
+        active: true,
+        priority: embeds.length
+      })
+      console.log('Add embed response:', response.data)
       setNewPrefix('')
       setShowAddModal(false)
       fetchEmbeds()
     } catch (error) {
-      console.error('Error adding embed:', error)
-      alert('Failed to add embed prefix')
+      console.error('Error adding embed:', error.response?.data || error.message)
+      alert('Failed to add embed prefix: ' + (error.response?.data?.error || error.message))
     }
   }
 
