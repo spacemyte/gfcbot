@@ -152,6 +152,7 @@ class InstagramEmbed(commands.Cog):
             return
         config = await self.get_instagram_embed_config(guild.id)
         webhook_mode = config.get('webhook_repost_enabled', False)
+        logger.info(f'Instagram embed config for guild {guild.id}: webhook_repost_enabled={webhook_mode}')
         embed_configs = await self.bot.db.get_embed_configs(guild.id)
         if not embed_configs:
             logger.warning(f'No embed configs found for server {guild.id}')
@@ -164,6 +165,7 @@ class InstagramEmbed(commands.Cog):
             if is_valid:
                 try:
                     if webhook_mode and isinstance(message.channel, discord.TextChannel):
+                        logger.info(f'Using webhook repost mode for message {message.id}')
                         await self._repost_with_webhook(message, embedded_url)
                         await self.bot.db.insert_message_data(
                             message_id=message.id,
