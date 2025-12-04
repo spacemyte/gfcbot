@@ -33,7 +33,12 @@ class Database:
         if not self.pool:
             try:
                 logger.info(f"Attempting to connect to database with connection string...")
-                self.pool = await asyncpg.create_pool(self.connection_string)
+                # Create pool with statement cache disabled to pick up schema changes
+                self.pool = await asyncpg.create_pool(
+                    self.connection_string,
+                    statement_cache_size=0,  # Disable statement cache to pick up schema changes
+                    max_inactive_connection_lifetime=300  # Refresh connections every 5 minutes
+                )
                 logger.info('Database connection pool created successfully')
             except Exception as e:
                 logger.error(f"Failed to create database connection pool: {e}")
