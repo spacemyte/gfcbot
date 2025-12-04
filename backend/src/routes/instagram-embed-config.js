@@ -15,7 +15,7 @@ router.get("/:serverId", async (req, res) => {
         server_id: req.params.serverId,
         webhook_repost_enabled: false,
         pruning_enabled: true,
-        pruning_max_days: 90
+        pruning_max_days: 90,
       });
     }
     res.json(result.rows[0]);
@@ -28,9 +28,12 @@ router.get("/:serverId", async (req, res) => {
 // Upsert Instagram embed config for a server
 router.put("/:serverId", async (req, res) => {
   try {
-    console.log("Updating Instagram embed config for server:", req.params.serverId);
+    console.log(
+      "Updating Instagram embed config for server:",
+      req.params.serverId
+    );
     console.log("Request body:", req.body);
-    
+
     const { webhook_repost_enabled, pruning_enabled, pruning_max_days } =
       req.body;
     const existing = await db.query(
