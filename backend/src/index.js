@@ -1,14 +1,28 @@
 require("dotenv").config();
+
+// Check required environment variables
+if (!process.env.DATABASE_URL && (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY)) {
+  console.error("ERROR: DATABASE_URL or (SUPABASE_URL + SUPABASE_KEY) must be set!");
+  process.exit(1);
+}
+
 const express = require("express");
 const cors = require("cors");
 const session = require("express-session");
 const passport = require("passport");
 const DiscordStrategy = require("passport-discord").Strategy;
 const cron = require("node-cron");
-const { supabase } = require("./supabase");
+const { db } = require("./supabase");
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Log database configuration
+if (process.env.DATABASE_URL) {
+  console.log("✓ Using Railway PostgreSQL (DATABASE_URL)");
+} else {
+  console.log("✓ Using Supabase (SUPABASE_URL + SUPABASE_KEY)");
+}
 
 // Middleware
 app.use(
@@ -123,43 +137,38 @@ cron.schedule("0 2 * * *", async () => {
 
   try {
     // Get all pruning configs
-    const { data: configs, error } = await supabase
-      .from("pruning_config")
-      .select("server_id, enabled, max_days")
-      .eq("enabled", true);
-
-    if (error) throw error;
+    const result = await db.query(
+      "SELECT server_id, max_days FROM pruning_config WHERE enabled = true"
+    );
+    const configs = result.rows;
 
     for (const config of configs) {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - config.max_days);
 
       // Delete old message data
-      const { error: deleteError } = await supabase
-        .from("message_data")
-        .delete()
-        .eq("server_id", config.server_id)
-        .lt("created_at", cutoffDate.toISOString());
-
-      if (deleteError) {
+      try {
+        await db.query(
+          "DELETE FROM message_data WHERE server_id = $1 AND created_at < $2",
+          [config.server_id, cutoffDate.toISOString()]
+        );
+        console.log(
+          `Pruned data for server ${config.server_id} (older than ${config.max_days} days)`
+        );
+      } catch (deleteError) {
         console.error(
           `Error pruning data for server ${config.server_id}:`,
           deleteError
         );
-      } else {
-        console.log(
-          `Pruned data for server ${config.server_id} (older than ${config.max_days} days)`
-        );
       }
 
       // Delete old audit logs
-      const { error: auditError } = await supabase
-        .from("audit_logs")
-        .delete()
-        .eq("server_id", config.server_id)
-        .lt("timestamp", cutoffDate.toISOString());
-
-      if (auditError) {
+      try {
+        await db.query(
+          "DELETE FROM audit_logs WHERE server_id = $1 AND created_at < $2",
+          [config.server_id, cutoffDate.toISOString()]
+        );
+      } catch (auditError) {
         console.error(
           `Error pruning audit logs for server ${config.server_id}:`,
           auditError
@@ -186,4 +195,4 @@ app.listen(PORT, () => {
 });
 
 // Export for testing
-module.exports = { app, supabase };
+module.exports = { app, db };
