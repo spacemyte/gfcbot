@@ -151,6 +151,7 @@ class InstagramEmbed(commands.Cog):
         
         # Don't notify if replying to their own message
         if message.author.id == original_user_id:
+            logger.info(f'User {message.author.id} replied to their own webhook message, skipping notification')
             return
         
         try:
