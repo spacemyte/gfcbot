@@ -170,20 +170,40 @@ class InstagramEmbed(commands.Cog):
                 try:
                     if webhook_mode and isinstance(message.channel, discord.TextChannel):
                         logger.info(f'Using webhook repost mode for message {message.id}')
-                        await self._repost_with_webhook(message, embedded_url)
-                        await self.bot.db.insert_message_data(
-                            message_id=message.id,
-                            channel_id=message.channel.id,
-                            server_id=guild.id,
-                            user_id=message.author.id,
-                            original_url=original_url,
-                            embedded_url=embedded_url,
-                            embed_prefix_used=prefix,
-                            validation_status='success',
-                            validation_error=None
-                        )
-                        logger.info(f'Successfully reposted with webhook for prefix "{prefix}"')
-                        return
+                        try:
+                            await self._repost_with_webhook(message, embedded_url)
+                            await self.bot.db.insert_message_data(
+                                message_id=message.id,
+                                channel_id=message.channel.id,
+                                server_id=guild.id,
+                                user_id=message.author.id,
+                                original_url=original_url,
+                                embedded_url=embedded_url,
+                                embed_prefix_used=prefix,
+                                validation_status='success',
+                                validation_error=None
+                            )
+                            logger.info(f'Successfully reposted with webhook for prefix "{prefix}"')
+                            return
+                        except Exception as e:
+                            # Webhook repost failed - fall back to normal reply mode
+                            logger.warning(f'Webhook repost failed ({e}), falling back to reply mode')
+                            await message.edit(suppress=True)
+                            new_content = message.content.replace(original_url, embedded_url)
+                            await message.reply(new_content, mention_author=False)
+                            await self.bot.db.insert_message_data(
+                                message_id=message.id,
+                                channel_id=message.channel.id,
+                                server_id=guild.id,
+                                user_id=message.author.id,
+                                original_url=original_url,
+                                embedded_url=embedded_url,
+                                embed_prefix_used=prefix,
+                                validation_status='success',
+                                validation_error=None
+                            )
+                            logger.info(f'Successfully embedded URL with prefix "{prefix}" (reply mode)')
+                            return
                     else:
                         await message.edit(suppress=True)
                         new_content = message.content.replace(original_url, embedded_url)
@@ -225,31 +245,53 @@ class InstagramEmbed(commands.Cog):
         """
         Delete the original message and repost as the user using a webhook (only in text channels).
         """
+        # Only allow in text channels
+        if not isinstance(message.channel, discord.TextChannel):
+            logger.warning('Webhook repost attempted in non-text channel; skipping.')
+            raise ValueError('Webhook repost only works in text channels')
+        
+        guild = message.guild
+        if not guild:
+            logger.warning('Webhook repost attempted in message with no guild; skipping.')
+            raise ValueError('Webhook repost requires a guild')
+        
         try:
-            # Only allow in text channels
-            if not isinstance(message.channel, discord.TextChannel):
-                logger.warning('Webhook repost attempted in non-text channel; skipping.')
-                return
-            guild = message.guild
-            if not guild:
-                logger.warning('Webhook repost attempted in message with no guild; skipping.')
-                return
+            # Delete the original message
             await message.delete()
+            logger.info(f'Deleted original message {message.id}')
+        except discord.Forbidden:
+            logger.error(f"Missing 'Manage Messages' permission to delete message {message.id}")
+            raise
+        except Exception as e:
+            logger.error(f"Failed to delete message {message.id}: {e}")
+            raise
+        
+        try:
+            # Find or create webhook
             webhooks = await message.channel.webhooks()
             webhook = None
             for wh in webhooks:
                 if wh.user and wh.user.id == guild.me.id:
                     webhook = wh
                     break
+            
             if not webhook:
                 webhook = await message.channel.create_webhook(name="GFCBot")
+                logger.info(f'Created new webhook in channel {message.channel.id}')
+            
+            # Send message via webhook
             await webhook.send(
                 content=embedded_url,
                 username=message.author.display_name,
                 avatar_url=message.author.display_avatar.url
             )
+            logger.info(f'Successfully reposted message via webhook with user {message.author.display_name}')
+        except discord.Forbidden as e:
+            logger.error(f"Missing 'Manage Webhooks' permission: {e}")
+            raise
         except Exception as e:
             logger.error(f"Failed to repost with webhook: {e}")
+            raise
     
     async def _validate_url(self, url: str, timeout: int = 5) -> tuple[bool, Optional[str]]:
         """
