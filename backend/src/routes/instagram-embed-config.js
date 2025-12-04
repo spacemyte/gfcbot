@@ -35,8 +35,12 @@ router.put("/:serverId", async (req, res) => {
     );
     console.log("Request body:", req.body);
 
-    const { webhook_repost_enabled, pruning_enabled, pruning_max_days, notify_self_replies } =
-      req.body;
+    const {
+      webhook_repost_enabled,
+      pruning_enabled,
+      pruning_max_days,
+      notify_self_replies,
+    } = req.body;
     const existing = await db.query(
       "SELECT id FROM instagram_embed_config WHERE server_id = $1",
       [req.params.serverId]
