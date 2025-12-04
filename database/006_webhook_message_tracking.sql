@@ -1,6 +1,5 @@
 -- Add webhook_message_id column to track reposted messages
-ALTER TABLE message_data
-ADD COLUMN webhook_message_id BIGINT;
+ALTER TABLE message_data ADD COLUMN webhook_message_id BIGINT;
 
 -- Add index for webhook message lookups
 CREATE INDEX idx_message_data_webhook_message ON message_data (webhook_message_id);
