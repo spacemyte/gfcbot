@@ -19,7 +19,6 @@ SUPABASE_KEY=your_supabase_service_role_key
 # Session & CORS
 SESSION_SECRET=your_32_char_random_string
 FRONTEND_URL=https://your-vercel-app.vercel.app
-COOKIE_DOMAIN=.vercel.app
 ```
 
 ## Important Notes:
@@ -27,8 +26,8 @@ COOKIE_DOMAIN=.vercel.app
 1. **NODE_ENV must be `production`** - Currently showing `development` in logs
 2. **DISCORD_CALLBACK_URL** - Must be your Railway backend URL + `/auth/discord/callback`
 3. **FRONTEND_URL** - Must match your Vercel domain exactly (no trailing slash)
-4. **COOKIE_DOMAIN** - Set to `.vercel.app` for cross-origin cookies
-5. **SESSION_SECRET** - Use `openssl rand -base64 32` to generate
+4. **SESSION_SECRET** - Use `openssl rand -base64 32` to generate
+5. **Do NOT set COOKIE_DOMAIN** - Removed because Railway and Vercel are different domains
 
 ## Vercel Environment Variables:
 

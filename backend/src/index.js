@@ -31,10 +31,11 @@ app.use(
     saveUninitialized: false,
     cookie: {
       secure: process.env.NODE_ENV === "production",
-      sameSite: "none",
+      httpOnly: true,
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      domain: process.env.COOKIE_DOMAIN || undefined,
     },
+    proxy: true,
   })
 );
 app.use(passport.initialize());
@@ -86,6 +87,9 @@ app.get(
     failureRedirect: process.env.FRONTEND_URL,
   }),
   (req, res) => {
+    // Session should be established here
+    console.log("Discord auth successful, user:", req.user?.username);
+    console.log("Session ID:", req.sessionID);
     res.redirect(process.env.FRONTEND_URL + "/dashboard");
   }
 );
