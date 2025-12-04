@@ -1,40 +1,54 @@
 const express = require("express");
 const router = express.Router();
-const { supabase } = require("../supabase");
+const { db } = require("../supabase");
 
 // Get message data for a server with filters
 router.get("/:serverId", async (req, res) => {
   try {
     const { status, startDate, endDate, limit = 100, offset = 0 } = req.query;
+    const limitNum = parseInt(limit);
+    const offsetNum = parseInt(offset);
 
-    let query = supabase
-      .from("message_data")
-      .select("*", { count: "exact" })
-      .eq("server_id", req.params.serverId)
-      .order("created_at", { ascending: false })
-      .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
+    let whereClause = "WHERE server_id = $1";
+    let params = [req.params.serverId];
+    let paramCount = 2;
 
     if (status) {
-      query = query.eq("validation_status", status);
+      whereClause += ` AND validation_status = $${paramCount}`;
+      params.push(status);
+      paramCount++;
     }
 
     if (startDate) {
-      query = query.gte("created_at", startDate);
+      whereClause += ` AND created_at >= $${paramCount}`;
+      params.push(startDate);
+      paramCount++;
     }
 
     if (endDate) {
-      query = query.lte("created_at", endDate);
+      whereClause += ` AND created_at <= $${paramCount}`;
+      params.push(endDate);
+      paramCount++;
     }
 
-    const { data, error, count } = await query;
+    // Get count
+    const countResult = await db.query(
+      `SELECT COUNT(*) as total FROM message_data ${whereClause}`,
+      params
+    );
+    const count = parseInt(countResult.rows[0].total);
 
-    if (error) throw error;
+    // Get data with pagination
+    const dataResult = await db.query(
+      `SELECT * FROM message_data ${whereClause} ORDER BY created_at DESC LIMIT $${paramCount} OFFSET $${paramCount + 1}`,
+      [...params, limitNum, offsetNum]
+    );
 
     res.json({
-      data,
+      data: dataResult.rows,
       count,
-      limit: parseInt(limit),
-      offset: parseInt(offset),
+      limit: limitNum,
+      offset: offsetNum,
     });
   } catch (error) {
     console.error("Error fetching messages:", error);
@@ -45,36 +59,21 @@ router.get("/:serverId", async (req, res) => {
 // Get message statistics for a server
 router.get("/:serverId/stats", async (req, res) => {
   try {
-    // Get total count
-    const { count: totalCount, error: totalError } = await supabase
-      .from("message_data")
-      .select("*", { count: "exact", head: true })
-      .eq("server_id", req.params.serverId);
+    const result = await db.query(
+      `SELECT 
+        COUNT(*) as total,
+        SUM(CASE WHEN validation_status = 'success' THEN 1 ELSE 0 END) as success,
+        SUM(CASE WHEN validation_status = 'failed' THEN 1 ELSE 0 END) as failed
+       FROM message_data 
+       WHERE server_id = $1`,
+      [req.params.serverId]
+    );
 
-    if (totalError) throw totalError;
-
-    // Get success count
-    const { count: successCount, error: successError } = await supabase
-      .from("message_data")
-      .select("*", { count: "exact", head: true })
-      .eq("server_id", req.params.serverId)
-      .eq("validation_status", "success");
-
-    if (successError) throw successError;
-
-    // Get failed count
-    const { count: failedCount, error: failedError } = await supabase
-      .from("message_data")
-      .select("*", { count: "exact", head: true })
-      .eq("server_id", req.params.serverId)
-      .eq("validation_status", "failed");
-
-    if (failedError) throw failedError;
-
+    const stats = result.rows[0];
     res.json({
-      total: totalCount || 0,
-      success: successCount || 0,
-      failed: failedCount || 0,
+      total: parseInt(stats.total) || 0,
+      success: parseInt(stats.success) || 0,
+      failed: parseInt(stats.failed) || 0,
     });
   } catch (error) {
     console.error("Error fetching message stats:", error);

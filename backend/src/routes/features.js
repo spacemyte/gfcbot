@@ -1,23 +1,17 @@
 const express = require("express");
 const router = express.Router();
-const { supabase } = require("../supabase");
+const { db } = require("../supabase");
 
 // Get all features
 router.get("/", async (req, res) => {
   try {
     console.log("Fetching features...");
-    const { data, error } = await supabase
-      .from("features")
-      .select("*")
-      .order("name");
+    const result = await db.query(
+      "SELECT * FROM features ORDER BY name ASC"
+    );
 
-    if (error) {
-      console.error("Supabase error fetching features:", error);
-      throw error;
-    }
-
-    console.log("Features fetched successfully:", data);
-    res.json(data);
+    console.log("Features fetched successfully:", result.rows);
+    res.json(result.rows);
   } catch (error) {
     console.error("Error fetching features:", error.message);
     res
@@ -29,15 +23,16 @@ router.get("/", async (req, res) => {
 // Get feature by ID
 router.get("/:id", async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from("features")
-      .select("*")
-      .eq("id", req.params.id)
-      .single();
+    const result = await db.query(
+      "SELECT * FROM features WHERE id = $1",
+      [req.params.id]
+    );
 
-    if (error) throw error;
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Feature not found" });
+    }
 
-    res.json(data);
+    res.json(result.rows[0]);
   } catch (error) {
     console.error("Error fetching feature:", error);
     res.status(500).json({ error: "Failed to fetch feature" });
@@ -47,15 +42,12 @@ router.get("/:id", async (req, res) => {
 // Get permissions for a feature in a server
 router.get("/:id/permissions/:serverId", async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from("feature_permissions")
-      .select("*")
-      .eq("feature_id", req.params.id)
-      .eq("server_id", req.params.serverId);
+    const result = await db.query(
+      "SELECT * FROM feature_permissions WHERE feature_id = $1 AND server_id = $2",
+      [req.params.id, req.params.serverId]
+    );
 
-    if (error) throw error;
-
-    res.json(data);
+    res.json(result.rows);
   } catch (error) {
     console.error("Error fetching permissions:", error);
     res.status(500).json({ error: "Failed to fetch permissions" });
