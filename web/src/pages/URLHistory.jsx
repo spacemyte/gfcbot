@@ -99,48 +99,40 @@ export default function URLHistory() {
       </div>
 
       {/* Messages List */}
-      <div className="bg-discord-bg-light rounded-lg overflow-x-auto">
+      <div className="bg-discord-bg-light rounded-lg overflow-hidden">
         {messages.length > 0 ? (
           <table className="w-full divide-y divide-gray-700">
             <thead className="bg-discord-bg">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Channel</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Original URL</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Embedded URL</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Prefix</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Author</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Date</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Channel</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">URL</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Author</th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
               {messages.map((msg) => (
                 <tr key={msg.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{formatDate(msg.created_at)}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">#{msg.channel_name || '-'}</td>
-                  <td className="px-6 py-4 text-sm text-gray-300">
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">{formatDate(msg.created_at)}</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">#{msg.channel_name || '-'}</td>
+                  <td className="px-4 py-3 text-sm text-gray-300">
                     <a href={msg.original_url} target="_blank" rel="noopener noreferrer" className="text-discord-blue hover:underline">
-                      {msg.original_url.substring(0, 30)}...
+                      {msg.original_url.substring(0, 40)}...
                     </a>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-300">
-                    {msg.embedded_url ? (
-                      <a href={msg.embedded_url} target="_blank" rel="noopener noreferrer" className="text-discord-green hover:underline">
-                        {msg.embedded_url.substring(0, 30)}...
-                      </a>
-                    ) : (
-                      <span className="text-gray-500">N/A</span>
-                    )}
+                    <a href={msg.original_url} target="_blank" rel="noopener noreferrer" className="text-discord-blue hover:underline">
+                      {msg.original_url.substring(0, 40)}...
+                    </a>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 py-3 whitespace-nowrap">
                     <span className={`px-2 py-1 text-xs rounded ${msg.validation_status === 'success' ? 'bg-discord-green' : 'bg-discord-red'} text-white`}>
                       {msg.validation_status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{msg.embed_prefix_used || '-'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{msg.author_username || msg.user_id || '-'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">{msg.author_username || msg.user_id || '-'}</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-center">
                     <button
                       onClick={async () => {
                         if (window.confirm('Remove this URL from history?')) {
@@ -152,7 +144,7 @@ export default function URLHistory() {
                           }
                         }
                       }}
-                      className="px-2 py-1 bg-discord-red text-white rounded hover:bg-red-700 transition"
+                      className="px-3 py-1 bg-discord-red text-white text-xs rounded hover:bg-red-700 transition"
                     >Remove</button>
                   </td>
                 </tr>
