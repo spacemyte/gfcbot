@@ -3,6 +3,7 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 import logging
+import asyncio
 from utils.database import Database
 from utils.feature_manager import FeatureManager
 
@@ -77,6 +78,27 @@ async def on_ready():
             name=bot_status
         )
     )
+    
+    # Start background task to check for status updates
+    bot.loop.create_task(update_bot_status_task())
+
+
+async def update_bot_status_task():
+    """Background task to periodically check and update bot status."""
+    await bot.wait_until_ready()
+    while True:
+        try:
+            await asyncio.sleep(30)  # Check every 30 seconds
+            bot_status = await db.get_bot_setting('bot_status')
+            if bot_status:
+                await bot.change_presence(
+                    activity=discord.Activity(
+                        type=discord.ActivityType.watching,
+                        name=bot_status
+                    )
+                )
+        except Exception as e:
+            logger.warning(f'Failed to update bot status: {e}')
 
 
 @bot.event
