@@ -40,7 +40,9 @@ router.get("/:serverId", async (req, res) => {
 
     // Get data with pagination, fallback to user_id if username is missing
     const dataResult = await db.query(
-      `SELECT m.*, COALESCE(u.username, m.user_id::text) as author_username FROM message_data m LEFT JOIN users u ON m.user_id = u.id ${whereClause} ORDER BY m.created_at DESC LIMIT $${paramCount} OFFSET $${paramCount + 1}`,
+      `SELECT m.*, COALESCE(u.username, m.user_id::text) as author_username FROM message_data m LEFT JOIN users u ON m.user_id = u.id ${whereClause} ORDER BY m.created_at DESC LIMIT $${paramCount} OFFSET $${
+        paramCount + 1
+      }`,
       [...params, limitNum, offsetNum]
     );
 
