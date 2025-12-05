@@ -203,6 +203,18 @@ export default function EmbedManager() {
             <div className="flex items-center space-x-3">
               <input
                 type="checkbox"
+                id="suppress-original-embed"
+                checked={embedConfig.suppress_original_embed ?? true}
+                onChange={e => handleConfigChange('suppress_original_embed', e.target.checked)}
+                className="w-5 h-5 text-discord-blue bg-discord-bg border-gray-600 rounded focus:ring-discord-blue"
+              />
+              <label htmlFor="suppress-original-embed" className="text-white">
+                Suppress original message embed preview
+              </label>
+            </div>
+            <div className="flex items-center space-x-3">
+              <input
+                type="checkbox"
                 id="pruning-enabled"
                 checked={embedConfig.pruning_enabled}
                 onChange={e => handleConfigChange('pruning_enabled', e.target.checked)}

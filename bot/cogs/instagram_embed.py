@@ -53,7 +53,8 @@ class InstagramEmbed(commands.Cog):
             'pruning_enabled': True,
             'pruning_max_days': 90,
             'webhook_reply_notifications': True,
-            'notify_self_replies': False
+            'notify_self_replies': False,
+            'suppress_original_embed': True
         }
         
     async def cog_load(self):
@@ -307,7 +308,8 @@ class InstagramEmbed(commands.Cog):
                         except Exception as e:
                             # Webhook repost failed - fall back to normal reply mode
                             logger.warning(f'Webhook repost failed ({e}), falling back to reply mode')
-                            await message.edit(suppress=True)
+                            if config.get('suppress_original_embed', True):
+                                await message.edit(suppress=True)
                             new_content = message.content.replace(original_url, embedded_url)
                             await message.reply(new_content, mention_author=False)
                             await self.bot.db.insert_message_data(
@@ -336,7 +338,8 @@ class InstagramEmbed(commands.Cog):
                             logger.info(f'Successfully embedded URL with prefix "{prefix}" (reply mode)')
                             return
                     else:
-                        await message.edit(suppress=True)
+                        if config.get('suppress_original_embed', True):
+                            await message.edit(suppress=True)
                         new_content = message.content.replace(original_url, embedded_url)
                         await message.reply(new_content, mention_author=False)
                         await self.bot.db.insert_message_data(
