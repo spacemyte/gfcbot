@@ -81,6 +81,11 @@ class InstagramEmbed(commands.Cog):
     
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
+                # Upsert user info (Discord ID and username)
+                try:
+                    await self.bot.db.upsert_user(message.author.id, str(message.author))
+                except Exception as e:
+                    logger.warning(f'Failed to upsert user info: {e}')
         """
         Listen for messages containing Instagram URLs.
         React with 👍 if the message already uses a configured prefix.

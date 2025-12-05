@@ -38,14 +38,23 @@ router.get("/:serverId", async (req, res) => {
     );
     const count = parseInt(countResult.rows[0].total);
 
-    // Get data with pagination, fallback to user_id if username is missing
+    // Get data with pagination, join users table for username
     const dataResult = await db.query(
-      `SELECT m.*, COALESCE(u.username, m.user_id::text) as author_username FROM message_data m LEFT JOIN users u ON m.user_id = u.id ${whereClause} ORDER BY m.created_at DESC LIMIT $${paramCount} OFFSET $${
+      `SELECT m.*, u.username as author_username FROM message_data m LEFT JOIN users u ON m.user_id = u.id ${whereClause} ORDER BY m.created_at DESC LIMIT $${paramCount} OFFSET $${
         paramCount + 1
       }`,
       [...params, limitNum, offsetNum]
     );
 
+    console.log(
+      "[DEBUG] serverId:",
+      req.params.serverId,
+      "whereClause:",
+      whereClause,
+      "params:",
+      params
+    );
+    console.log("[DEBUG] dataResult count:", dataResult.rows.length);
     res.json({
       data: dataResult.rows,
       count,
