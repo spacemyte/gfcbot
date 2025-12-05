@@ -16,6 +16,7 @@ router.get("/:serverId", async (req, res) => {
         webhook_repost_enabled: false,
         pruning_enabled: true,
         pruning_max_days: 90,
+        webhook_reply_notifications: true,
         notify_self_replies: false,
       });
     }
@@ -39,6 +40,7 @@ router.put("/:serverId", async (req, res) => {
       webhook_repost_enabled,
       pruning_enabled,
       pruning_max_days,
+      webhook_reply_notifications,
       notify_self_replies,
     } = req.body;
     const existing = await db.query(
@@ -49,25 +51,27 @@ router.put("/:serverId", async (req, res) => {
     if (existing.rows.length > 0) {
       result = await db.query(
         `UPDATE instagram_embed_config
-         SET webhook_repost_enabled = $1, pruning_enabled = $2, pruning_max_days = $3, notify_self_replies = $4, updated_at = NOW()
-         WHERE server_id = $5 RETURNING *`,
+         SET webhook_repost_enabled = $1, pruning_enabled = $2, pruning_max_days = $3, webhook_reply_notifications = $4, notify_self_replies = $5, updated_at = NOW()
+         WHERE server_id = $6 RETURNING *`,
         [
           webhook_repost_enabled,
           pruning_enabled,
           pruning_max_days,
+          webhook_reply_notifications,
           notify_self_replies,
           req.params.serverId,
         ]
       );
     } else {
       result = await db.query(
-        `INSERT INTO instagram_embed_config (server_id, webhook_repost_enabled, pruning_enabled, pruning_max_days, notify_self_replies)
-         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+        `INSERT INTO instagram_embed_config (server_id, webhook_repost_enabled, pruning_enabled, pruning_max_days, webhook_reply_notifications, notify_self_replies)
+         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
         [
           req.params.serverId,
           webhook_repost_enabled,
           pruning_enabled,
           pruning_max_days,
+          webhook_reply_notifications,
           notify_self_replies,
         ]
       );

@@ -215,6 +215,18 @@ export default function EmbedManager() {
             <div className="flex items-center space-x-3">
               <input
                 type="checkbox"
+                id="webhook-reply-notifications"
+                checked={embedConfig.webhook_reply_notifications}
+                onChange={e => handleConfigChange('webhook_reply_notifications', e.target.checked)}
+                className="w-5 h-5 text-discord-blue bg-discord-bg border-gray-600 rounded focus:ring-discord-blue"
+              />
+              <label htmlFor="webhook-reply-notifications" className="text-white">
+                Enable webhook reply notifications
+              </label>
+            </div>
+            <div className="flex items-center space-x-3">
+              <input
+                type="checkbox"
                 id="notify-self-replies"
                 checked={embedConfig.notify_self_replies}
                 onChange={e => handleConfigChange('notify_self_replies', e.target.checked)}
