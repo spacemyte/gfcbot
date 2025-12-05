@@ -99,9 +99,9 @@ export default function URLHistory() {
       </div>
 
       {/* Messages List */}
-      <div className="bg-discord-bg-light rounded-lg overflow-hidden">
+      <div className="bg-discord-bg-light rounded-lg overflow-x-auto">
         {messages.length > 0 ? (
-          <table className="min-w-full divide-y divide-gray-700">
+          <table className="w-full divide-y divide-gray-700">
             <thead className="bg-discord-bg">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Date</th>
@@ -119,13 +119,13 @@ export default function URLHistory() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{formatDate(msg.created_at)}</td>
                   <td className="px-6 py-4 text-sm text-gray-300">
                     <a href={msg.original_url} target="_blank" rel="noopener noreferrer" className="text-discord-blue hover:underline">
-                      {msg.original_url.substring(0, 50)}...
+                      {msg.original_url.substring(0, 30)}...
                     </a>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-300">
                     {msg.embedded_url ? (
                       <a href={msg.embedded_url} target="_blank" rel="noopener noreferrer" className="text-discord-green hover:underline">
-                        {msg.embedded_url.substring(0, 50)}...
+                        {msg.embedded_url.substring(0, 30)}...
                       </a>
                     ) : (
                       <span className="text-gray-500">N/A</span>
