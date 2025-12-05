@@ -7,22 +7,23 @@ logger = logging.getLogger('gfcbot.database')
 
 
 class Database:
-        async def upsert_user(self, user_id: int, username: str):
-            """
-            Upsert Discord user ID and username into users table.
-            """
-            await self.connect()
-            async with self.pool.acquire() as conn:
-                await conn.execute(
-                    """
-                    INSERT INTO users (id, username, updated_at)
-                    VALUES ($1, $2, NOW())
-                    ON CONFLICT (id) DO UPDATE SET username = EXCLUDED.username, updated_at = NOW()
-                    """,
-                    user_id, username
-                )
     """Database interface for GFC Bot using asyncpg."""
-    
+
+    async def upsert_user(self, user_id: int, username: str):
+        """
+        Upsert Discord user ID and username into users table.
+        """
+        await self.connect()
+        async with self.pool.acquire() as conn:
+            await conn.execute(
+                """
+                INSERT INTO users (id, username, updated_at)
+                VALUES ($1, $2, NOW())
+                ON CONFLICT (id) DO UPDATE SET username = EXCLUDED.username, updated_at = NOW()
+                """,
+                user_id, username
+            )
+
     def __init__(self, database_url: str):
         """
         Initialize database connection.
