@@ -142,6 +142,7 @@ const embedsRouter = require("./routes/embeds");
 const messagesRouter = require("./routes/messages");
 const auditLogsRouter = require("./routes/audit-logs");
 const pruningRouter = require("./routes/pruning");
+const botSettingsRouter = require("./routes/bot-settings");
 
 app.use("/api/features", isAuthenticated, featuresRouter);
 app.use(
@@ -149,6 +150,7 @@ app.use(
   isAuthenticated,
   instagramEmbedConfigRouter
 );
+app.use("/api/bot-settings", isAuthenticated, botSettingsRouter);
 // Bot-accessible read-only endpoint for Instagram embed config (no auth required)
 app.get("/api/bot/instagram-embed-config/:serverId", async (req, res) => {
   try {

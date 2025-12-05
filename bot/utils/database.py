@@ -218,3 +218,40 @@ class Database:
                 """,
                 server_id, user_id, action, target_type, target_id, details
             )
+
+    async def get_bot_setting(self, key: str) -> Optional[str]:
+        """
+        Get a bot setting value.
+        
+        Args:
+            key: Setting key (e.g., 'bot_status')
+            
+        Returns:
+            Setting value or None if not found
+        """
+        await self.connect()
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT value FROM bot_settings WHERE key = $1",
+                key
+            )
+            return row['value'] if row else None
+
+    async def set_bot_setting(self, key: str, value: str):
+        """
+        Set a bot setting value.
+        
+        Args:
+            key: Setting key (e.g., 'bot_status')
+            value: Setting value
+        """
+        await self.connect()
+        async with self.pool.acquire() as conn:
+            await conn.execute(
+                """
+                INSERT INTO bot_settings (key, value, updated_at)
+                VALUES ($1, $2, NOW())
+                ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
+                """,
+                key, value
+            )

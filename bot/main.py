@@ -62,11 +62,19 @@ async def on_ready():
     except Exception as e:
         logger.error(f'Failed to sync commands: {e}')
     
-    # Set bot status
+    # Set bot status from database
+    try:
+        bot_status = await db.get_bot_setting('bot_status')
+        if not bot_status:
+            bot_status = "Currently freeing your Instagram links"
+    except Exception as e:
+        logger.warning(f'Failed to fetch bot status from database: {e}')
+        bot_status = "Currently freeing your Instagram links"
+    
     await bot.change_presence(
         activity=discord.Activity(
             type=discord.ActivityType.watching,
-            name="Currently freeing your Instagram links"
+            name=bot_status
         )
     )
 

@@ -10,12 +10,14 @@ export default function Settings() {
     enabled: true,
     max_days: 90
   })
+  const [botStatus, setBotStatus] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState(null)
 
   useEffect(() => {
     fetchConfig()
+    fetchBotStatus()
   }, [serverId])
 
   const fetchConfig = async () => {
@@ -29,6 +31,16 @@ export default function Settings() {
     }
   }
 
+  const fetchBotStatus = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/bot-settings/bot_status`)
+      setBotStatus(response.data.value)
+    } catch (error) {
+      console.error('Error fetching bot status:', error)
+      setBotStatus('Currently freeing your Instagram links')
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSaving(true)
@@ -36,6 +48,7 @@ export default function Settings() {
 
     try {
       await axios.put(`${API_URL}/api/pruning/${serverId}`, pruningConfig)
+      await axios.put(`${API_URL}/api/bot-settings/bot_status`, { value: botStatus })
       setMessage({ type: 'success', text: 'Settings saved successfully!' })
     } catch (error) {
       console.error('Error saving config:', error)
@@ -57,6 +70,28 @@ export default function Settings() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Bot Status */}
+        <div className="bg-discord-bg-light p-6 rounded-lg">
+          <h2 className="text-xl font-semibold text-white mb-4">Bot Status</h2>
+          
+          <div>
+            <label className="block text-gray-300 mb-2">
+              Bot Status Message
+            </label>
+            <input
+              type="text"
+              value={botStatus}
+              onChange={(e) => setBotStatus(e.target.value)}
+              placeholder="Currently freeing your Instagram links"
+              maxLength="128"
+              className="w-full px-3 py-2 bg-discord-bg text-white rounded focus:outline-none focus:ring-2 focus:ring-discord-blue"
+            />
+            <p className="mt-2 text-sm text-gray-400">
+              Set what the bot displays as its status (max 128 characters).
+            </p>
+          </div>
+        </div>
+
         {/* Data Retention */}
         <div className="bg-discord-bg-light p-6 rounded-lg">
           <h2 className="text-xl font-semibold text-white mb-4">Data Retention</h2>
