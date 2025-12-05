@@ -94,7 +94,13 @@ app.get("/", (req, res) => {
 });
 
 // Auth routes
-app.get("/auth/discord", passport.authenticate("discord"));
+app.get("/auth/discord", (req, res, next) => {
+  // Store rememberMe preference in session
+  if (req.query.rememberMe === "true") {
+    req.session.rememberMe = true;
+  }
+  passport.authenticate("discord")(req, res, next);
+});
 
 app.get(
   "/auth/discord/callback",
@@ -102,6 +108,11 @@ app.get(
     failureRedirect: process.env.FRONTEND_URL,
   }),
   (req, res) => {
+    // If user selected "Remember me", extend session to 30 days
+    if (req.session.rememberMe) {
+      req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+      delete req.session.rememberMe; // Clean up the temp flag
+    }
     // Session should be established here
     console.log("Discord auth successful, user:", req.user?.username);
     console.log("Session ID:", req.sessionID);

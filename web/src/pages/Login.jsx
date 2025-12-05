@@ -1,8 +1,14 @@
+import { useState } from 'react'
+
 const API_URL = import.meta.env.VITE_API_URL || ''
 
 export default function Login() {
+  const [rememberMe, setRememberMe] = useState(false)
+
   const handleLogin = () => {
-    window.location.href = `${API_URL}/auth/discord`
+    // Store remember me preference in localStorage
+    localStorage.setItem('rememberMe', rememberMe ? 'true' : 'false')
+    window.location.href = `${API_URL}/auth/discord?rememberMe=${rememberMe}`
   }
 
   return (
@@ -17,6 +23,18 @@ export default function Login() {
           </p>
         </div>
         <div>
+          <div className="flex items-center mb-4">
+            <input
+              type="checkbox"
+              id="remember-me"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="w-4 h-4 text-discord-blue bg-discord-bg border-gray-600 rounded focus:ring-discord-blue"
+            />
+            <label htmlFor="remember-me" className="ml-2 text-sm text-gray-300">
+              Keep me logged in for 30 days
+            </label>
+          </div>
           <button
             onClick={handleLogin}
             className="w-full flex justify-center items-center px-4 py-3 border border-transparent text-base font-medium rounded-md text-white bg-discord-blue hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-discord-blue transition"
