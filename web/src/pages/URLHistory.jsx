@@ -122,10 +122,6 @@ export default function URLHistory() {
                       {msg.original_url.substring(0, 40)}...
                     </a>
                   </td>
-                    <a href={msg.original_url} target="_blank" rel="noopener noreferrer" className="text-discord-blue hover:underline">
-                      {msg.original_url.substring(0, 40)}...
-                    </a>
-                  </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <span className={`px-2 py-1 text-xs rounded ${msg.validation_status === 'success' ? 'bg-discord-green' : 'bg-discord-red'} text-white`}>
                       {msg.validation_status}
