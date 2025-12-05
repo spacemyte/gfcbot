@@ -105,6 +105,7 @@ export default function URLHistory() {
             <thead className="bg-discord-bg">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Channel</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Original URL</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Embedded URL</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
@@ -117,6 +118,7 @@ export default function URLHistory() {
               {messages.map((msg) => (
                 <tr key={msg.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{formatDate(msg.created_at)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">#{msg.channel_name || '-'}</td>
                   <td className="px-6 py-4 text-sm text-gray-300">
                     <a href={msg.original_url} target="_blank" rel="noopener noreferrer" className="text-discord-blue hover:underline">
                       {msg.original_url.substring(0, 30)}...

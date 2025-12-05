@@ -38,9 +38,9 @@ router.get("/:serverId", async (req, res) => {
     );
     const count = parseInt(countResult.rows[0].total);
 
-    // Get data with pagination, join users table for username
+    // Get data with pagination, join users and channels tables for username and channel name
     const dataResult = await db.query(
-      `SELECT m.*, u.username as author_username FROM message_data m LEFT JOIN users u ON m.user_id = u.id ${whereClause} ORDER BY m.created_at DESC LIMIT $${paramCount} OFFSET $${
+      `SELECT m.*, u.username as author_username, c.name as channel_name FROM message_data m LEFT JOIN users u ON m.user_id = u.id LEFT JOIN channels c ON m.channel_id = c.id ${whereClause} ORDER BY m.created_at DESC LIMIT $${paramCount} OFFSET $${
         paramCount + 1
       }`,
       [...params, limitNum, offsetNum]

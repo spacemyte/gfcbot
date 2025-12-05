@@ -24,6 +24,21 @@ class Database:
                 user_id, username
             )
 
+    async def upsert_channel(self, channel_id: int, channel_name: str):
+        """
+        Upsert Discord channel ID and name into channels table.
+        """
+        await self.connect()
+        async with self.pool.acquire() as conn:
+            await conn.execute(
+                """
+                INSERT INTO channels (id, name, updated_at)
+                VALUES ($1, $2, NOW())
+                ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, updated_at = NOW()
+                """,
+                channel_id, channel_name
+            )
+
     def __init__(self, database_url: str):
         """
         Initialize database connection.

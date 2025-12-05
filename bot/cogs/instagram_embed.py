@@ -92,6 +92,12 @@ class InstagramEmbed(commands.Cog):
         except Exception as e:
             logger.warning(f'Failed to upsert user info: {e}')
         
+        # Upsert channel info (Discord channel ID and name)
+        try:
+            await self.bot.db.upsert_channel(message.channel.id, message.channel.name)
+        except Exception as e:
+            logger.warning(f'Failed to upsert channel info: {e}')
+        
         # Ignore bot messages
         if message.author.bot:
             return
