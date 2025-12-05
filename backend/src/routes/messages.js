@@ -38,9 +38,9 @@ router.get("/:serverId", async (req, res) => {
     );
     const count = parseInt(countResult.rows[0].total);
 
-    // Get data with pagination
+    // Get data with pagination, join users table for username
     const dataResult = await db.query(
-      `SELECT * FROM message_data ${whereClause} ORDER BY created_at DESC LIMIT $${paramCount} OFFSET $${
+      `SELECT m.*, u.username as author_username FROM message_data m LEFT JOIN users u ON m.user_id = u.id ${whereClause} ORDER BY m.created_at DESC LIMIT $${paramCount} OFFSET $${
         paramCount + 1
       }`,
       [...params, limitNum, offsetNum]
@@ -51,6 +51,26 @@ router.get("/:serverId", async (req, res) => {
       count,
       limit: limitNum,
       offset: offsetNum,
+    });
+    // Delete a message from history
+    router.delete("/:serverId/:messageId", async (req, res) => {
+      try {
+        const { serverId, messageId } = req.params;
+        // Only allow delete if message belongs to server
+        const result = await db.query(
+          "DELETE FROM message_data WHERE id = $1 AND server_id = $2 RETURNING id",
+          [messageId, serverId]
+        );
+        if (result.rowCount === 0) {
+          return res
+            .status(404)
+            .json({ error: "Message not found or not allowed" });
+        }
+        res.json({ success: true });
+      } catch (error) {
+        console.error("Error deleting message:", error);
+        res.status(500).json({ error: "Failed to delete message" });
+      }
     });
   } catch (error) {
     console.error("Error fetching messages:", error);

@@ -107,6 +107,20 @@ class InstagramEmbed(commands.Cog):
         if not match:
             return
         original_url = match.group(0)
+
+        # Log audit: URL detected
+        try:
+            await self.bot.db.insert_audit_log(
+                server_id=message.guild.id,
+                user_id=message.author.id,
+                action='url_detected',
+                details={
+                    'original_url': original_url,
+                    'message_id': message.id
+                }
+            )
+        except Exception as e:
+            logger.warning(f'Failed to log audit event for url_detected: {e}')
         
         # Get all embed configs for this server
         embed_configs = await self.bot.db.get_embed_configs(message.guild.id)
@@ -123,6 +137,16 @@ class InstagramEmbed(commands.Cog):
             try:
                 await message.add_reaction('👍')
                 logger.info(f'Reacted with thumbs up to already-embedded URL: {original_url}')
+                # Log audit: already embedded
+                await self.bot.db.insert_audit_log(
+                    server_id=message.guild.id,
+                    user_id=message.author.id,
+                    action='already_embedded',
+                    details={
+                        'original_url': original_url,
+                        'message_id': message.id
+                    }
+                )
             except Exception as e:
                 logger.warning(f'Failed to react to message: {e}')
             return
@@ -253,6 +277,19 @@ class InstagramEmbed(commands.Cog):
                                 validation_error=None,
                                 webhook_message_id=webhook_msg.id
                             )
+                            # Log audit: reposted with webhook
+                            await self.bot.db.insert_audit_log(
+                                server_id=guild.id,
+                                user_id=message.author.id,
+                                action='reposted_with_webhook',
+                                details={
+                                    'original_url': original_url,
+                                    'embedded_url': embedded_url,
+                                    'prefix': prefix,
+                                    'message_id': message.id,
+                                    'webhook_message_id': webhook_msg.id
+                                }
+                            )
                             logger.info(f'Successfully reposted with webhook for prefix "{prefix}"')
                             return
                         except Exception as e:
@@ -272,6 +309,18 @@ class InstagramEmbed(commands.Cog):
                                 validation_status='success',
                                 validation_error=None
                             )
+                            # Log audit: embedded with reply
+                            await self.bot.db.insert_audit_log(
+                                server_id=guild.id,
+                                user_id=message.author.id,
+                                action='embedded_with_reply',
+                                details={
+                                    'original_url': original_url,
+                                    'embedded_url': embedded_url,
+                                    'prefix': prefix,
+                                    'message_id': message.id
+                                }
+                            )
                             logger.info(f'Successfully embedded URL with prefix "{prefix}" (reply mode)')
                             return
                     else:
@@ -289,6 +338,18 @@ class InstagramEmbed(commands.Cog):
                             validation_status='success',
                             validation_error=None
                         )
+                        # Log audit: embedded with reply
+                        await self.bot.db.insert_audit_log(
+                            server_id=guild.id,
+                            user_id=message.author.id,
+                            action='embedded_with_reply',
+                            details={
+                                'original_url': original_url,
+                                'embedded_url': embedded_url,
+                                'prefix': prefix,
+                                'message_id': message.id
+                            }
+                        )
                         logger.info(f'Successfully embedded URL with prefix "{prefix}"')
                         return
                 except discord.Forbidden:
@@ -297,6 +358,18 @@ class InstagramEmbed(commands.Cog):
                         new_content = message.content.replace(original_url, embedded_url)
                         await message.reply(new_content, mention_author=False)
                         logger.info(f'Sent reply but could not suppress original embed')
+                        # Log audit: embedded with reply (forbidden)
+                        await self.bot.db.insert_audit_log(
+                            server_id=guild.id,
+                            user_id=message.author.id,
+                            action='embedded_with_reply_forbidden',
+                            details={
+                                'original_url': original_url,
+                                'embedded_url': embedded_url,
+                                'prefix': prefix,
+                                'message_id': message.id
+                            }
+                        )
                         return
                     except:
                         break
@@ -305,6 +378,17 @@ class InstagramEmbed(commands.Cog):
                     break
             else:
                 logger.warning(f'Prefix "{prefix}" failed: {error}')
+        # Log audit: all prefixes failed
+        await self.bot.db.insert_audit_log(
+            server_id=guild.id,
+            user_id=message.author.id,
+            action='embed_failed',
+            details={
+                'original_url': original_url,
+                'error': 'All embed prefixes failed validation',
+                'message_id': message.id
+            }
+        )
         await self._handle_failure(
             message=message,
             original_url=original_url,
