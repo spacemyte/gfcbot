@@ -18,6 +18,7 @@ const passport = require("passport");
 const DiscordStrategy = require("passport-discord").Strategy;
 const cron = require("node-cron");
 const { db } = require("./supabase");
+const PostgresSessionStore = require("./postgres-session-store");
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -39,6 +40,7 @@ app.use(
 app.use(express.json());
 app.use(
   session({
+    store: new PostgresSessionStore(),
     secret: process.env.SESSION_SECRET || "gfcbot-secret",
     resave: false,
     saveUninitialized: false,
