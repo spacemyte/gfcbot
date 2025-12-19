@@ -347,6 +347,11 @@ class TwitterEmbed(commands.Cog):
                     else:
                         logger.info(f'Using regular mode for message {message.id}')
                         try:
+                            if config.get('suppress_original_embed', True):
+                                try:
+                                    await message.edit(suppress=True)
+                                except Exception as suppress_error:
+                                    logger.warning(f'Failed to suppress original Twitter embed: {suppress_error}')
                             await message.reply(embedded_url, mention_author=False)
                             await self.bot.db.insert_message_data(
                                 message_id=message.id,
