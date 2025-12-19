@@ -11,6 +11,13 @@ A general purpose Discord bot for the GFC private community with web-based manag
 - **Web Dashboard**: Manage bot features, embed prefixes, view URL history, and audit logs
 - **Discord OAuth**: Secure login with server role-based access control
 
+## Discord Bot Invite
+
+- Invite URL (current permissions):
+  `https://discord.com/api/oauth2/authorize?client_id=1303529371780255844&permissions=537226304&scope=bot%20applications.commands`
+- Scopes: `bot applications.commands`
+- Permissions integer: `537226304` (includes View Channels, Send Messages, Manage Messages, Manage Webhooks, Read Message History, Embed Links, Add Reactions). Update this link if permissions change.
+
 ## Project Structure
 
 ```
