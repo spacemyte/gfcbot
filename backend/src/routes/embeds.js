@@ -80,18 +80,22 @@ router.post("/:serverId", async (req, res) => {
 
     // Log audit trail
     if (req.user) {
-      await db.query(
-        `INSERT INTO audit_logs (server_id, user_id, action, target_type, target_id, details)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [
-          req.params.serverId,
-          req.user.id,
-          "embed_created",
-          "embed_config",
-          data.id,
-          JSON.stringify({ prefix, active, priority, embed_type }),
-        ]
-      );
+      try {
+        await db.query(
+          `INSERT INTO audit_logs (server_id, user_id, action, target_type, target_id, details)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          [
+            req.params.serverId,
+            req.user.id,
+            "embed_created",
+            "embed_config",
+            data.id,
+            JSON.stringify({ prefix, active, priority, embed_type }),
+          ]
+        );
+      } catch (auditErr) {
+        console.error("Failed to log embed_created audit:", auditErr);
+      }
     }
 
     res.json(data);
@@ -151,18 +155,22 @@ router.put("/:serverId/:id", async (req, res) => {
 
     // Log audit trail
     if (req.user) {
-      await db.query(
-        `INSERT INTO audit_logs (server_id, user_id, action, target_type, target_id, details)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [
-          req.params.serverId,
-          req.user.id,
-          "embed_updated",
-          "embed_config",
-          req.params.id,
-          JSON.stringify({ prefix, active, priority, embed_type }),
-        ]
-      );
+      try {
+        await db.query(
+          `INSERT INTO audit_logs (server_id, user_id, action, target_type, target_id, details)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          [
+            req.params.serverId,
+            req.user.id,
+            "embed_updated",
+            "embed_config",
+            req.params.id,
+            JSON.stringify({ prefix, active, priority, embed_type }),
+          ]
+        );
+      } catch (auditErr) {
+        console.error("Failed to log embed_updated audit:", auditErr);
+      }
     }
 
     res.json(data);
@@ -186,17 +194,21 @@ router.delete("/:serverId/:id", async (req, res) => {
 
     // Log audit trail
     if (req.user) {
-      await db.query(
-        `INSERT INTO audit_logs (server_id, user_id, action, target_type, target_id)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [
-          req.params.serverId,
-          req.user.id,
-          "embed_deleted",
-          "embed_config",
-          req.params.id,
-        ]
-      );
+      try {
+        await db.query(
+          `INSERT INTO audit_logs (server_id, user_id, action, target_type, target_id)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [
+            req.params.serverId,
+            req.user.id,
+            "embed_deleted",
+            "embed_config",
+            req.params.id,
+          ]
+        );
+      } catch (auditErr) {
+        console.error("Failed to log embed_deleted audit:", auditErr);
+      }
     }
 
     res.json({ success: true });
@@ -221,18 +233,22 @@ router.post("/:serverId/reorder", async (req, res) => {
 
     // Log audit trail
     if (req.user) {
-      await db.query(
-        `INSERT INTO audit_logs (server_id, user_id, action, target_type, target_id, details)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [
-          req.params.serverId,
-          req.user.id,
-          "embeds_reordered",
-          "embed_config",
-          "bulk",
-          JSON.stringify({ embedIds }),
-        ]
-      );
+      try {
+        await db.query(
+          `INSERT INTO audit_logs (server_id, user_id, action, target_type, target_id, details)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          [
+            req.params.serverId,
+            req.user.id,
+            "embeds_reordered",
+            "embed_config",
+            "bulk",
+            JSON.stringify({ embedIds }),
+          ]
+        );
+      } catch (auditErr) {
+        console.error("Failed to log embeds_reordered audit:", auditErr);
+      }
     }
 
     res.json({ success: true });
