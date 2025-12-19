@@ -12,6 +12,7 @@ if (
 }
 
 const express = require("express");
+const axios = require("axios");
 const cors = require("cors");
 const session = require("express-session");
 const passport = require("passport");
@@ -22,6 +23,9 @@ const PostgresSessionStore = require("./postgres-session-store");
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+let botGuildCache = { ids: [], fetchedAt: 0 };
+const BOT_GUILD_CACHE_TTL_MS = 5 * 60 * 1000;
 
 // Log database configuration
 if (process.env.DATABASE_URL) {
@@ -120,6 +124,36 @@ app.get(
   }
 );
 
+async function fetchBotGuildIds() {
+  if (!process.env.DISCORD_BOT_TOKEN) {
+    return null;
+  }
+  const now = Date.now();
+  if (
+    now - botGuildCache.fetchedAt < BOT_GUILD_CACHE_TTL_MS &&
+    botGuildCache.ids.length
+  ) {
+    return botGuildCache.ids;
+  }
+  try {
+    const resp = await axios.get(
+      "https://discord.com/api/v10/users/@me/guilds",
+      {
+        headers: { Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}` },
+      }
+    );
+    const ids = resp.data.map((g) => g.id);
+    botGuildCache = { ids, fetchedAt: now };
+    return ids;
+  } catch (err) {
+    console.error(
+      "Failed to fetch bot guilds:",
+      err.response?.status || err.message
+    );
+    return null;
+  }
+}
+
 app.get("/auth/logout", (req, res, next) => {
   req.logout((err) => {
     if (err) return next(err);
@@ -135,13 +169,20 @@ app.get("/auth/logout", (req, res, next) => {
   });
 });
 
-app.get("/auth/user", isAuthenticated, (req, res) => {
+app.get("/auth/user", isAuthenticated, async (req, res) => {
+  let guilds = req.user.guilds || [];
+  // Filter to guilds where the bot is present, if we can fetch them
+  const botGuildIds = await fetchBotGuildIds();
+  if (botGuildIds && botGuildIds.length) {
+    guilds = guilds.filter((g) => botGuildIds.includes(g.id));
+  }
+
   res.json({
     id: req.user.id,
     username: req.user.username,
     discriminator: req.user.discriminator,
     avatar: req.user.avatar,
-    guilds: req.user.guilds,
+    guilds,
   });
 });
 

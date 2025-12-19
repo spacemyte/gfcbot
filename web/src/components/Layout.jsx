@@ -26,8 +26,18 @@ export default function Layout({ user, children, onLogout }) {
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-4">
               <h1 className="text-2xl font-bold text-white">GFC Bot</h1>
-              {serverId && (
-                <nav className="flex space-x-4 ml-8">
+              <nav className="flex space-x-4 ml-8">
+                <Link
+                  to="/dashboard"
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${
+                    location.pathname === '/dashboard'
+                      ? 'bg-discord-blue text-white'
+                      : 'text-gray-300 hover:bg-gray-700'
+                  }`}
+                >
+                  Dashboard
+                </Link>
+                {serverId && (
                   <Link
                     to={`/embeds/${serverId}`}
                     className={`px-3 py-2 rounded-md text-sm font-medium ${
@@ -68,8 +78,8 @@ export default function Layout({ user, children, onLogout }) {
                   >
                     Settings
                   </Link>
-                </nav>
-              )}
+                )}
+              </nav>
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-gray-300">{user.username}</span>
