@@ -126,6 +126,9 @@ app.get(
 
 async function fetchBotGuildIds() {
   if (!process.env.DISCORD_BOT_TOKEN) {
+    console.warn(
+      "DISCORD_BOT_TOKEN not set - cannot filter guilds by bot presence"
+    );
     return null;
   }
   const now = Date.now();
@@ -133,9 +136,11 @@ async function fetchBotGuildIds() {
     now - botGuildCache.fetchedAt < BOT_GUILD_CACHE_TTL_MS &&
     botGuildCache.ids.length
   ) {
+    console.log(`Using cached bot guilds: ${botGuildCache.ids.length} guilds`);
     return botGuildCache.ids;
   }
   try {
+    console.log("Fetching bot guilds from Discord API...");
     const resp = await axios.get(
       "https://discord.com/api/v10/users/@me/guilds",
       {
@@ -144,11 +149,13 @@ async function fetchBotGuildIds() {
     );
     const ids = resp.data.map((g) => g.id);
     botGuildCache = { ids, fetchedAt: now };
+    console.log(`Fetched ${ids.length} bot guilds from Discord API`);
     return ids;
   } catch (err) {
     console.error(
       "Failed to fetch bot guilds:",
-      err.response?.status || err.message
+      err.response?.status || err.message,
+      err.response?.data
     );
     return null;
   }
@@ -171,10 +178,19 @@ app.get("/auth/logout", (req, res, next) => {
 
 app.get("/auth/user", isAuthenticated, async (req, res) => {
   let guilds = req.user.guilds || [];
+  const originalGuildCount = guilds.length;
+
   // Filter to guilds where the bot is present, if we can fetch them
   const botGuildIds = await fetchBotGuildIds();
   if (botGuildIds && botGuildIds.length) {
     guilds = guilds.filter((g) => botGuildIds.includes(g.id));
+    console.log(
+      `Filtered guilds for user ${req.user.username}: ${originalGuildCount} -> ${guilds.length} (bot present in ${botGuildIds.length} guilds)`
+    );
+  } else {
+    console.log(
+      `No bot guild filtering applied for user ${req.user.username} (showing all ${originalGuildCount} guilds)`
+    );
   }
 
   res.json({
