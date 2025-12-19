@@ -26,6 +26,7 @@ class InstagramEmbed(commands.Cog):
         self.session: Optional[aiohttp.ClientSession] = None
         self.config_cache: Dict[int, Dict] = {}  # guild_id -> config
         self.api_url = os.getenv('API_URL', 'http://localhost:3001')  # Set your backend API URL here
+        self.instagram_feature_id: Optional[str] = None
 
     async def get_instagram_embed_config(self, guild_id: int) -> Dict:
         if not self.session:
@@ -60,6 +61,11 @@ class InstagramEmbed(commands.Cog):
     async def cog_load(self):
         """Initialize aiohttp session when cog loads."""
         self.session = aiohttp.ClientSession()
+        try:
+            self.instagram_feature_id = await self.bot.feature_manager.get_feature_id('instagram_embed')
+            logger.info(f"Loaded instagram feature id: {self.instagram_feature_id}")
+        except Exception as e:
+            logger.warning(f"Failed to load instagram feature id: {e}")
         # Start validation worker
         self.bot.loop.create_task(self._validation_worker())
         logger.info('Instagram embed cog loaded')
@@ -136,8 +142,13 @@ class InstagramEmbed(commands.Cog):
         except Exception as e:
             logger.warning(f'Failed to log audit event for url_detected: {e}')
         
-        # Get all embed configs for this server
-        embed_configs = await self.bot.db.get_embed_configs(message.guild.id)
+        # Get all embed configs for this server, scoped to instagram feature
+        if not self.instagram_feature_id:
+            self.instagram_feature_id = await self.bot.feature_manager.get_feature_id('instagram_embed')
+        if not self.instagram_feature_id:
+            logger.warning('instagram_embed feature id not found; skipping embed processing')
+            return
+        embed_configs = await self.bot.db.get_embed_configs(message.guild.id, self.instagram_feature_id)
         prefixes = [c['prefix'] for c in embed_configs] if embed_configs else []
         
         # Check if URL already uses a configured prefix
@@ -269,7 +280,12 @@ class InstagramEmbed(commands.Cog):
         config = await self.get_instagram_embed_config(guild.id)
         webhook_mode = config.get('webhook_repost_enabled', False)
         logger.info(f'Instagram embed config for guild {guild.id}: webhook_repost_enabled={webhook_mode}')
-        embed_configs = await self.bot.db.get_embed_configs(guild.id)
+        if not self.instagram_feature_id:
+            self.instagram_feature_id = await self.bot.feature_manager.get_feature_id('instagram_embed')
+        if not self.instagram_feature_id:
+            logger.warning('instagram_embed feature id not found; cannot fetch embed configs')
+            return
+        embed_configs = await self.bot.db.get_embed_configs(guild.id, self.instagram_feature_id)
         if not embed_configs:
             logger.warning(f'No embed configs found for server {guild.id}')
             return

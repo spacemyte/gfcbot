@@ -26,6 +26,7 @@ class TwitterEmbed(commands.Cog):
         self.session: Optional[aiohttp.ClientSession] = None
         self.config_cache: Dict[int, Dict] = {}  # guild_id -> config
         self.api_url = os.getenv('API_URL', 'http://localhost:3001')  # Set your backend API URL here
+        self.twitter_feature_id: Optional[str] = None
 
     async def get_twitter_embed_config(self, guild_id: int) -> Dict:
         if not self.session:
@@ -60,6 +61,11 @@ class TwitterEmbed(commands.Cog):
     async def cog_load(self):
         """Initialize aiohttp session when cog loads."""
         self.session = aiohttp.ClientSession()
+        try:
+            self.twitter_feature_id = await self.bot.feature_manager.get_feature_id('twitter_embed')
+            logger.info(f"Loaded twitter feature id: {self.twitter_feature_id}")
+        except Exception as e:
+            logger.warning(f"Failed to load twitter feature id: {e}")
         # Start validation worker
         self.bot.loop.create_task(self._validation_worker())
         logger.info('Twitter embed cog loaded')
@@ -136,8 +142,13 @@ class TwitterEmbed(commands.Cog):
         except Exception as e:
             logger.warning(f'Failed to log audit event for url_detected: {e}')
         
-        # Get all embed configs for this server
-        embed_configs = await self.bot.db.get_embed_configs(message.guild.id)
+        # Get all embed configs for this server for twitter feature
+        if not self.twitter_feature_id:
+            self.twitter_feature_id = await self.bot.feature_manager.get_feature_id('twitter_embed')
+        if not self.twitter_feature_id:
+            logger.warning('twitter_embed feature id not found; skipping embed processing')
+            return
+        embed_configs = await self.bot.db.get_embed_configs(message.guild.id, self.twitter_feature_id)
         prefixes = [c['prefix'] for c in embed_configs] if embed_configs else []
         
         # Check if URL already uses a configured prefix
@@ -271,7 +282,12 @@ class TwitterEmbed(commands.Cog):
         config = await self.get_twitter_embed_config(guild.id)
         webhook_mode = config.get('webhook_repost_enabled', False)
         logger.info(f'Twitter embed config for guild {guild.id}: webhook_repost_enabled={webhook_mode}')
-        embed_configs = await self.bot.db.get_embed_configs(guild.id)
+        if not self.twitter_feature_id:
+            self.twitter_feature_id = await self.bot.feature_manager.get_feature_id('twitter_embed')
+        if not self.twitter_feature_id:
+            logger.warning('twitter_embed feature id not found; cannot fetch embed configs')
+            return
+        embed_configs = await self.bot.db.get_embed_configs(guild.id, self.twitter_feature_id)
         if not embed_configs:
             logger.warning(f'No embed configs found for server {guild.id}')
             return

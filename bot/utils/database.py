@@ -100,27 +100,33 @@ class Database:
                 server_id
             )
     
-    async def get_embed_configs(self, server_id: int) -> List[Dict[str, Any]]:
+    async def get_embed_configs(self, server_id: int, feature_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """
-        Get all active embed configurations for a server, ordered by priority.
-        
-        Args:
-            server_id: Discord server ID
-            
-        Returns:
-            List of embed config dictionaries
+        Get all active embed configurations for a server, optionally scoped to a feature, ordered by priority.
         """
         await self.connect()
         async with self.pool.acquire() as conn:  # type: ignore
-            rows = await conn.fetch(
-                """
-                SELECT id, prefix, priority, active
-                FROM embed_configs
-                WHERE server_id = $1 AND active = true
-                ORDER BY priority ASC
-                """,
-                server_id
-            )
+            if feature_id:
+                rows = await conn.fetch(
+                    """
+                    SELECT id, prefix, priority, active, embed_type, feature_id
+                    FROM embed_configs
+                    WHERE server_id = $1 AND feature_id = $2 AND active = true
+                    ORDER BY priority ASC
+                    """,
+                    server_id,
+                    feature_id
+                )
+            else:
+                rows = await conn.fetch(
+                    """
+                    SELECT id, prefix, priority, active, embed_type, feature_id
+                    FROM embed_configs
+                    WHERE server_id = $1 AND active = true
+                    ORDER BY priority ASC
+                    """,
+                    server_id
+                )
             return [dict(row) for row in rows]
     
     async def insert_message_data(
