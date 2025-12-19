@@ -1,16 +1,18 @@
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 
 const API_URL = import.meta.env.VITE_API_URL || ''
 
 export default function Layout({ user, children, onLogout }) {
   const location = useLocation()
+  const navigate = useNavigate()
   const serverId = location.pathname.split('/')[2]
 
   const handleLogout = async () => {
     try {
-      await axios.get(`${API_URL}/auth/logout`)
+      await axios.get(`${API_URL}/auth/logout`, { withCredentials: true })
       onLogout()
+      navigate('/')
     } catch (error) {
       console.error('Logout error:', error)
     }

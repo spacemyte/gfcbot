@@ -120,9 +120,18 @@ app.get(
   }
 );
 
-app.get("/auth/logout", (req, res) => {
-  req.logout(() => {
-    res.redirect(process.env.FRONTEND_URL);
+app.get("/auth/logout", (req, res, next) => {
+  req.logout((err) => {
+    if (err) return next(err);
+    req.session.destroy((destroyErr) => {
+      if (destroyErr) return next(destroyErr);
+      res.clearCookie("connect.sid", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      });
+      res.json({ success: true });
+    });
   });
 });
 
