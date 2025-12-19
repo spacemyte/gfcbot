@@ -12,13 +12,67 @@ class Admin(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
     
+    def is_admin(self, member: discord.Member) -> bool:
+        """Check if a member has admin permissions."""
+        return member.guild_permissions.administrator or member.guild_permissions.manage_guild
+    
     @app_commands.command(name="help", description="Show help information for GFC Bot")
     async def help(self, interaction: discord.Interaction):
-        """Display help information."""
+        """Display help information based on user permissions."""
+        if not interaction.guild:
+            await interaction.response.send_message("This command can only be used in a server.", ephemeral=True)
+            return
+        
+        member = interaction.guild.get_member(interaction.user.id)
+        if not member:
+            await interaction.response.send_message("Could not verify your permissions.", ephemeral=True)
+            return
+        
+        # Check if user is admin
+        is_admin = self.is_admin(member)
+        
+        if is_admin:
+            await self._send_admin_help(interaction)
+        else:
+            await self._send_user_help(interaction)
+    
+    async def _send_user_help(self, interaction: discord.Interaction):
+        """Send help message for regular users."""
         embed = discord.Embed(
             title="GFC Bot Help",
-            description="A general purpose Discord bot for the GFC community",
+            description="Automatic social media link embedding for the GFC community",
             color=discord.Color.blue()
+        )
+        
+        embed.add_field(
+            name="📸 Instagram Links",
+            value="Post any Instagram link and the bot will automatically embed it with a better preview!",
+            inline=False
+        )
+        
+        embed.add_field(
+            name="𝕏 Twitter/X Links",
+            value="Post any Twitter/X link and the bot will automatically embed it with a better preview!",
+            inline=False
+        )
+        
+        embed.add_field(
+            name="💡 How It Works",
+            value="Just paste a link from Instagram or Twitter/X in any channel where the bot is active. "
+                  "The bot will detect it and respond with an enhanced embed!",
+            inline=False
+        )
+        
+        embed.set_footer(text="GFC Bot • Questions? Contact a server admin")
+        
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+    
+    async def _send_admin_help(self, interaction: discord.Interaction):
+        """Send help message for administrators."""
+        embed = discord.Embed(
+            title="GFC Bot Help (Admin)",
+            description="A general purpose Discord bot for the GFC community",
+            color=discord.Color.gold()
         )
         
         embed.add_field(
@@ -46,6 +100,7 @@ class Admin(commands.Cog):
         embed.add_field(
             name="⚙️ Admin Commands",
             value="`/status` - Show bot status and stats\n"
+                  "`/ping` - Check bot latency\n"
                   "`/help` - Show this help message",
             inline=False
         )
@@ -56,13 +111,23 @@ class Admin(commands.Cog):
             inline=False
         )
         
-        embed.set_footer(text="GFC Bot • Private Community")
+        embed.set_footer(text="GFC Bot • Admin Panel")
         
         await interaction.response.send_message(embed=embed, ephemeral=True)
     
     @app_commands.command(name="status", description="Show bot status and statistics")
+    @app_commands.default_permissions(administrator=True)
     async def status(self, interaction: discord.Interaction):
         """Display bot status information."""
+        if not interaction.guild:
+            await interaction.response.send_message("This command can only be used in a server.", ephemeral=True)
+            return
+        
+        member = interaction.guild.get_member(interaction.user.id)
+        if not member or not self.is_admin(member):
+            await interaction.response.send_message("❌ You need administrator permissions to use this command.", ephemeral=True)
+            return
+        
         embed = discord.Embed(
             title="🤖 GFC Bot Status",
             color=discord.Color.green()
@@ -91,8 +156,18 @@ class Admin(commands.Cog):
         await interaction.response.send_message(embed=embed, ephemeral=True)
     
     @app_commands.command(name="ping", description="Check bot latency")
+    @app_commands.default_permissions(administrator=True)
     async def ping(self, interaction: discord.Interaction):
         """Simple ping command to check bot responsiveness."""
+        if not interaction.guild:
+            await interaction.response.send_message("This command can only be used in a server.", ephemeral=True)
+            return
+        
+        member = interaction.guild.get_member(interaction.user.id)
+        if not member or not self.is_admin(member):
+            await interaction.response.send_message("❌ You need administrator permissions to use this command.", ephemeral=True)
+            return
+        
         latency = round(self.bot.latency * 1000)
         await interaction.response.send_message(f"🏓 Pong! Latency: {latency}ms", ephemeral=True)
 
