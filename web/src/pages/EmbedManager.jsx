@@ -221,7 +221,7 @@ export default function EmbedManager() {
         feature_id: featureId,
         embed_type: activeTab === 'twitter' ? newEmbedType : 'prefix',
         active: true,
-        priority: embeds.length
+        priority: filteredEmbeds.length
       })
       const response = await axios.post(`${API_URL}/api/embeds/${serverId}`, {
         prefix: newPrefix.trim(),
