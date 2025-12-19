@@ -4,6 +4,11 @@ const { db } = require("../supabase");
 
 // Get audit logs for a server
 router.get("/:serverId", async (req, res) => {
+  // Disable caching for audit logs
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate, private, max-age=0');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+
   try {
     const { limit = 100, offset = 0, action, startDate, endDate } = req.query;
     const limitNum = parseInt(limit);

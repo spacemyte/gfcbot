@@ -10,16 +10,34 @@ export default function AuditLogs() {
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(0)
   const [totalCount, setTotalCount] = useState(0)
+  const [autoRefresh, setAutoRefresh] = useState(false)
   const limit = 50
 
   useEffect(() => {
     fetchLogs()
   }, [serverId, page])
 
+  useEffect(() => {
+    if (!autoRefresh) return
+
+    const interval = setInterval(() => {
+      fetchLogs()
+    }, 5000)
+
+    return () => clearInterval(interval)
+  }, [serverId, page, autoRefresh])
+
   const fetchLogs = async () => {
     try {
       const response = await axios.get(
-        `${API_URL}/api/audit-logs/${serverId}?limit=${limit}&offset=${page * limit}`
+        `${API_URL}/api/audit-logs/${serverId}?limit=${limit}&offset=${page * limit}`,
+        {
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+          },
+        }
       )
       setLogs(response.data.data)
       setTotalCount(response.data.count)
@@ -49,9 +67,30 @@ export default function AuditLogs() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-white">Audit Logs</h1>
-        <p className="mt-2 text-gray-400">Track all changes and actions in your server</p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold text-white">Audit Logs</h1>
+          <p className="mt-2 text-gray-400">Track all changes and actions in your server</p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              setPage(0)
+              fetchLogs()
+            }}
+            className="px-4 py-2 bg-discord-blurple text-white rounded hover:bg-blue-700 transition flex items-center gap-2"
+          >
+            <span>🔄</span> Refresh
+          </button>
+          <button
+            onClick={() => setAutoRefresh(!autoRefresh)}
+            className={`px-4 py-2 rounded text-white transition flex items-center gap-2 ${
+              autoRefresh ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600 hover:bg-gray-700'
+            }`}
+          >
+            <span>{autoRefresh ? '✓' : '○'}</span> Auto (5s)
+          </button>
+        </div>
       </div>
 
       <div className="bg-discord-bg-light rounded-lg overflow-hidden">
