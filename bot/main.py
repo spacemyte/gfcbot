@@ -128,6 +128,7 @@ async def load_cogs():
     """Load all cog modules."""
     cogs = [
         'cogs.instagram_embed',
+        'cogs.twitter_embed',
         'cogs.permissions',
         'cogs.admin'
     ]

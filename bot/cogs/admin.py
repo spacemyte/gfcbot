@@ -29,6 +29,13 @@ class Admin(commands.Cog):
         )
         
         embed.add_field(
+            name="𝕏 Twitter/X Embed",
+            value="Automatically embeds Twitter/X URLs with configurable prefixes. "
+                  "Just post a Twitter/X link and the bot will handle it!",
+            inline=False
+        )
+        
+        embed.add_field(
             name="🔐 Permission Commands (Admin)",
             value="`/setpermission` - Set role permissions for features\n"
                   "`/checkpermission` - Check if a role has a permission\n"
@@ -71,7 +78,7 @@ class Admin(commands.Cog):
         )
         
         # Features
-        features_list = "✅ Instagram Embed"
+        features_list = "✅ Instagram Embed\n✅ Twitter/X Embed"
         embed.add_field(
             name="Active Features",
             value=features_list,

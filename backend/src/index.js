@@ -151,6 +151,7 @@ app.get("/api/health", (req, res) => {
 // API routes
 const featuresRouter = require("./routes/features");
 const instagramEmbedConfigRouter = require("./routes/instagram-embed-config");
+const twitterEmbedConfigRouter = require("./routes/twitter-embed-config");
 const embedsRouter = require("./routes/embeds");
 const messagesRouter = require("./routes/messages");
 const auditLogsRouter = require("./routes/audit-logs");
@@ -163,6 +164,7 @@ app.use(
   isAuthenticated,
   instagramEmbedConfigRouter
 );
+app.use("/api/twitter-embed-config", isAuthenticated, twitterEmbedConfigRouter);
 app.use("/api/bot-settings", isAuthenticated, botSettingsRouter);
 // Bot-accessible read-only endpoint for Instagram embed config (no auth required)
 app.get("/api/bot/instagram-embed-config/:serverId", async (req, res) => {
@@ -184,6 +186,29 @@ app.get("/api/bot/instagram-embed-config/:serverId", async (req, res) => {
     res.json(result.rows[0]);
   } catch (error) {
     console.error("Error fetching instagram embed config:", error);
+    res.status(500).json({ error: "Failed to fetch config" });
+  }
+});
+// Bot-accessible read-only endpoint for Twitter embed config (no auth required)
+app.get("/api/bot/twitter-embed-config/:serverId", async (req, res) => {
+  try {
+    const { db } = require("./supabase");
+    const result = await db.query(
+      "SELECT * FROM twitter_embed_config WHERE server_id = $1",
+      [req.params.serverId]
+    );
+    if (result.rows.length === 0) {
+      // Return defaults if no config exists yet
+      return res.json({
+        server_id: req.params.serverId,
+        webhook_repost_enabled: false,
+        pruning_enabled: true,
+        pruning_max_days: 90,
+      });
+    }
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error("Error fetching twitter embed config:", error);
     res.status(500).json({ error: "Failed to fetch config" });
   }
 });

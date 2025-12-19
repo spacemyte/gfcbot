@@ -24,7 +24,7 @@ router.get("/:serverId", async (req, res) => {
 // Create new embed config
 router.post("/:serverId", async (req, res) => {
   try {
-    const { prefix, active, priority, feature_id } = req.body;
+    const { prefix, active, priority, feature_id, embed_type } = req.body;
 
     console.log("Creating embed config:", {
       serverId: req.params.serverId,
@@ -32,6 +32,7 @@ router.post("/:serverId", async (req, res) => {
       active,
       priority,
       feature_id,
+      embed_type,
     });
 
     if (!db.query) {
@@ -47,8 +48,8 @@ router.post("/:serverId", async (req, res) => {
     }
 
     const result = await db.query(
-      `INSERT INTO embed_configs (server_id, feature_id, prefix, active, priority)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO embed_configs (server_id, feature_id, prefix, active, priority, embed_type)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
       [
         req.params.serverId,
@@ -56,6 +57,7 @@ router.post("/:serverId", async (req, res) => {
         prefix,
         active !== undefined ? active : true,
         priority || 0,
+        embed_type || "prefix",
       ]
     );
 
@@ -72,7 +74,7 @@ router.post("/:serverId", async (req, res) => {
           "embed_created",
           "embed_config",
           data.id,
-          JSON.stringify({ prefix, active, priority }),
+          JSON.stringify({ prefix, active, priority, embed_type }),
         ]
       );
     }
@@ -89,7 +91,7 @@ router.post("/:serverId", async (req, res) => {
 // Update embed config
 router.put("/:serverId/:id", async (req, res) => {
   try {
-    const { prefix, active, priority } = req.body;
+    const { prefix, active, priority, embed_type } = req.body;
 
     const updates = [];
     const values = [];
@@ -106,6 +108,10 @@ router.put("/:serverId/:id", async (req, res) => {
     if (priority !== undefined) {
       updates.push(`priority = $${paramCount++}`);
       values.push(priority);
+    }
+    if (embed_type !== undefined) {
+      updates.push(`embed_type = $${paramCount++}`);
+      values.push(embed_type);
     }
 
     if (updates.length === 0) {
@@ -139,7 +145,7 @@ router.put("/:serverId/:id", async (req, res) => {
           "embed_updated",
           "embed_config",
           req.params.id,
-          JSON.stringify({ prefix, active, priority }),
+          JSON.stringify({ prefix, active, priority, embed_type }),
         ]
       );
     }

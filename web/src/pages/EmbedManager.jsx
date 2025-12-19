@@ -11,13 +11,24 @@ export default function EmbedManager() {
   const [loading, setLoading] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
   const [newPrefix, setNewPrefix] = useState('')
+  const [newEmbedType, setNewEmbedType] = useState('prefix') // 'prefix' or 'replacement'
   const [featureId, setFeatureId] = useState(null)
+  const [activeTab, setActiveTab] = useState('instagram') // 'instagram' or 'twitter'
+  
   // Instagram embed config state
-  const [embedConfig, setEmbedConfig] = useState({
+  const [instagramConfig, setInstagramConfig] = useState({
     webhook_repost_enabled: false,
     pruning_enabled: true,
     pruning_max_days: 90
   })
+  
+  // Twitter embed config state
+  const [twitterConfig, setTwitterConfig] = useState({
+    webhook_repost_enabled: false,
+    pruning_enabled: true,
+    pruning_max_days: 90
+  })
+  
   const [configLoading, setConfigLoading] = useState(true)
   const [configSaving, setConfigSaving] = useState(false)
   const [configMessage, setConfigMessage] = useState(null)
@@ -25,18 +36,18 @@ export default function EmbedManager() {
   useEffect(() => {
     fetchEmbeds()
     fetchFeatureId()
-    fetchEmbedConfig()
+    fetchInstagramConfig()
+    fetchTwitterConfig()
   }, [serverId])
 
-  const fetchEmbedConfig = async () => {
+  const fetchInstagramConfig = async () => {
     setConfigLoading(true)
     try {
       const response = await axios.get(`${API_URL}/api/instagram-embed-config/${serverId}`)
-      setEmbedConfig(response.data)
+      setInstagramConfig(response.data)
     } catch (error) {
       if (error.response && error.response.status === 404) {
-        // No config yet, use defaults
-        setEmbedConfig({
+        setInstagramConfig({
           webhook_repost_enabled: false,
           pruning_enabled: true,
           pruning_max_days: 90
@@ -49,8 +60,32 @@ export default function EmbedManager() {
     }
   }
 
-  const handleConfigChange = (field, value) => {
-    setEmbedConfig((prev) => ({ ...prev, [field]: value }))
+  const fetchTwitterConfig = async () => {
+    setConfigLoading(true)
+    try {
+      const response = await axios.get(`${API_URL}/api/twitter-embed-config/${serverId}`)
+      setTwitterConfig(response.data)
+    } catch (error) {
+      if (error.response && error.response.status === 404) {
+        setTwitterConfig({
+          webhook_repost_enabled: false,
+          pruning_enabled: true,
+          pruning_max_days: 90
+        })
+      } else {
+        console.error('Error fetching Twitter embed config:', error)
+      }
+    } finally {
+      setConfigLoading(false)
+    }
+  }
+
+  const handleInstagramConfigChange = (field, value) => {
+    setInstagramConfig((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const handleTwitterConfigChange = (field, value) => {
+    setTwitterConfig((prev) => ({ ...prev, [field]: value }))
   }
 
   const handleConfigSave = async (e) => {
@@ -58,13 +93,16 @@ export default function EmbedManager() {
     setConfigSaving(true)
     setConfigMessage(null)
     try {
-      await axios.put(`${API_URL}/api/instagram-embed-config/${serverId}`,
-        embedConfig
-      )
+      const endpoint = activeTab === 'instagram' 
+        ? `/api/instagram-embed-config/${serverId}`
+        : `/api/twitter-embed-config/${serverId}`
+      const config = activeTab === 'instagram' ? instagramConfig : twitterConfig
+      
+      await axios.put(`${API_URL}${endpoint}`, config)
       setConfigMessage({ type: 'success', text: 'Settings saved successfully!' })
     } catch (error) {
       setConfigMessage({ type: 'error', text: 'Failed to save settings.' })
-      console.error('Error saving Instagram embed config:', error)
+      console.error('Error saving embed config:', error)
     } finally {
       setConfigSaving(false)
     }
@@ -134,17 +172,20 @@ export default function EmbedManager() {
       console.log('Sending add embed request:', {
         prefix: newPrefix.trim(),
         feature_id: featureId,
+        embed_type: newEmbedType,
         active: true,
         priority: embeds.length
       })
       const response = await axios.post(`${API_URL}/api/embeds/${serverId}`, {
         prefix: newPrefix.trim(),
         feature_id: featureId,
+        embed_type: newEmbedType,
         active: true,
         priority: embeds.length
       })
       console.log('Add embed response:', response.data)
       setNewPrefix('')
+      setNewEmbedType('prefix')
       setShowAddModal(false)
       fetchEmbeds()
     } catch (error) {
@@ -179,11 +220,38 @@ export default function EmbedManager() {
     return <div className="text-white">Loading...</div>
   }
 
+  const currentConfig = activeTab === 'instagram' ? instagramConfig : twitterConfig
+  const platformName = activeTab === 'instagram' ? 'Instagram' : 'Twitter/X'
+
   return (
     <div className="space-y-6">
-      {/* Instagram Embed Config Section */}
+      {/* Platform Tabs */}
+      <div className="flex space-x-2 border-b border-gray-700">
+        <button
+          onClick={() => setActiveTab('instagram')}
+          className={`px-4 py-2 font-semibold transition ${
+            activeTab === 'instagram'
+              ? 'border-b-2 border-discord-blue text-discord-blue'
+              : 'text-gray-400 hover:text-white'
+          }`}
+        >
+          📸 Instagram
+        </button>
+        <button
+          onClick={() => setActiveTab('twitter')}
+          className={`px-4 py-2 font-semibold transition ${
+            activeTab === 'twitter'
+              ? 'border-b-2 border-discord-blue text-discord-blue'
+              : 'text-gray-400 hover:text-white'
+          }`}
+        >
+          𝕏 Twitter/X
+        </button>
+      </div>
+
+      {/* Embed Config Section */}
       <div className="bg-discord-bg-light p-6 rounded-lg">
-        <h2 className="text-xl font-semibold text-white mb-4">Instagram Embed Settings</h2>
+        <h2 className="text-xl font-semibold text-white mb-4">{platformName} Embed Settings</h2>
         {configLoading ? (
           <div className="text-white">Loading settings...</div>
         ) : (
@@ -192,8 +260,11 @@ export default function EmbedManager() {
               <input
                 type="checkbox"
                 id="webhook-repost-enabled"
-                checked={embedConfig.webhook_repost_enabled}
-                onChange={e => handleConfigChange('webhook_repost_enabled', e.target.checked)}
+                checked={currentConfig.webhook_repost_enabled}
+                onChange={e => activeTab === 'instagram' 
+                  ? handleInstagramConfigChange('webhook_repost_enabled', e.target.checked)
+                  : handleTwitterConfigChange('webhook_repost_enabled', e.target.checked)
+                }
                 className="w-5 h-5 text-discord-blue bg-discord-bg border-gray-600 rounded focus:ring-discord-blue"
               />
               <label htmlFor="webhook-repost-enabled" className="text-white">
@@ -204,8 +275,11 @@ export default function EmbedManager() {
               <input
                 type="checkbox"
                 id="suppress-original-embed"
-                checked={embedConfig.suppress_original_embed ?? true}
-                onChange={e => handleConfigChange('suppress_original_embed', e.target.checked)}
+                checked={currentConfig.suppress_original_embed ?? true}
+                onChange={e => activeTab === 'instagram'
+                  ? handleInstagramConfigChange('suppress_original_embed', e.target.checked)
+                  : handleTwitterConfigChange('suppress_original_embed', e.target.checked)
+                }
                 className="w-5 h-5 text-discord-blue bg-discord-bg border-gray-600 rounded focus:ring-discord-blue"
               />
               <label htmlFor="suppress-original-embed" className="text-white">
@@ -216,8 +290,11 @@ export default function EmbedManager() {
               <input
                 type="checkbox"
                 id="pruning-enabled"
-                checked={embedConfig.pruning_enabled}
-                onChange={e => handleConfigChange('pruning_enabled', e.target.checked)}
+                checked={currentConfig.pruning_enabled}
+                onChange={e => activeTab === 'instagram'
+                  ? handleInstagramConfigChange('pruning_enabled', e.target.checked)
+                  : handleTwitterConfigChange('pruning_enabled', e.target.checked)
+                }
                 className="w-5 h-5 text-discord-blue bg-discord-bg border-gray-600 rounded focus:ring-discord-blue"
               />
               <label htmlFor="pruning-enabled" className="text-white">
@@ -228,8 +305,11 @@ export default function EmbedManager() {
               <input
                 type="checkbox"
                 id="webhook-reply-notifications"
-                checked={embedConfig.webhook_reply_notifications}
-                onChange={e => handleConfigChange('webhook_reply_notifications', e.target.checked)}
+                checked={currentConfig.webhook_reply_notifications}
+                onChange={e => activeTab === 'instagram'
+                  ? handleInstagramConfigChange('webhook_reply_notifications', e.target.checked)
+                  : handleTwitterConfigChange('webhook_reply_notifications', e.target.checked)
+                }
                 className="w-5 h-5 text-discord-blue bg-discord-bg border-gray-600 rounded focus:ring-discord-blue"
               />
               <label htmlFor="webhook-reply-notifications" className="text-white">
@@ -240,15 +320,18 @@ export default function EmbedManager() {
               <input
                 type="checkbox"
                 id="notify-self-replies"
-                checked={embedConfig.notify_self_replies}
-                onChange={e => handleConfigChange('notify_self_replies', e.target.checked)}
+                checked={currentConfig.notify_self_replies}
+                onChange={e => activeTab === 'instagram'
+                  ? handleInstagramConfigChange('notify_self_replies', e.target.checked)
+                  : handleTwitterConfigChange('notify_self_replies', e.target.checked)
+                }
                 className="w-5 h-5 text-discord-blue bg-discord-bg border-gray-600 rounded focus:ring-discord-blue"
               />
               <label htmlFor="notify-self-replies" className="text-white">
                 Notify me when I reply to my own webhook post (testing)
               </label>
             </div>
-            {embedConfig.pruning_enabled && (
+            {currentConfig.pruning_enabled && (
               <div>
                 <label className="block text-gray-300 mb-2">
                   Maximum retention period (days)
@@ -257,12 +340,15 @@ export default function EmbedManager() {
                   type="number"
                   min="1"
                   max="90"
-                  value={embedConfig.pruning_max_days}
-                  onChange={e => handleConfigChange('pruning_max_days', parseInt(e.target.value))}
+                  value={currentConfig.pruning_max_days}
+                  onChange={e => activeTab === 'instagram'
+                    ? handleInstagramConfigChange('pruning_max_days', parseInt(e.target.value))
+                    : handleTwitterConfigChange('pruning_max_days', parseInt(e.target.value))
+                  }
                   className="w-full px-3 py-2 bg-discord-bg text-white rounded focus:outline-none focus:ring-2 focus:ring-discord-blue"
                 />
                 <p className="mt-2 text-sm text-gray-400">
-                  Data older than {embedConfig.pruning_max_days} days will be automatically deleted. Maximum: 90 days.
+                  Data older than {currentConfig.pruning_max_days} days will be automatically deleted. Maximum: 90 days.
                 </p>
               </div>
             )}
@@ -285,7 +371,7 @@ export default function EmbedManager() {
       </div>
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-white">Instagram Embed Manager</h1>
+          <h1 className="text-3xl font-bold text-white">{platformName} Embed Manager</h1>
           <p className="mt-2 text-gray-400">Drag and drop to reorder priority</p>
         </div>
         <button
@@ -326,6 +412,11 @@ export default function EmbedManager() {
                               <span className={`px-2 py-1 text-xs rounded ${embed.active ? 'bg-discord-green' : 'bg-gray-600'} text-white`}>
                                 {embed.active ? 'Active' : 'Inactive'}
                               </span>
+                              {activeTab === 'twitter' && embed.embed_type && (
+                                <span className={`px-2 py-1 text-xs rounded ${embed.embed_type === 'prefix' ? 'bg-blue-600' : 'bg-purple-600'} text-white`}>
+                                  {embed.embed_type === 'prefix' ? 'Prefix' : 'Replace'}
+                                </span>
+                              )}
                             </div>
                             <p className="text-sm text-gray-400">Priority: {index + 1}</p>
                           </div>
@@ -363,19 +454,41 @@ export default function EmbedManager() {
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-discord-bg-light p-6 rounded-lg shadow-xl max-w-md w-full">
-            <h2 className="text-2xl font-bold text-white mb-4">Add Embed Prefix</h2>
+            <h2 className="text-2xl font-bold text-white mb-4">Add {platformName} Prefix</h2>
             <form onSubmit={handleAddEmbed}>
               <div className="mb-4">
-                <label className="block text-gray-300 mb-2">Prefix (e.g., kk, dd, vv)</label>
+                <label className="block text-gray-300 mb-2">
+                  {activeTab === 'twitter' ? 'Prefix or Replacement' : 'Prefix'} (e.g., {activeTab === 'twitter' ? 'fxtwitter.com or gg' : 'kk'})
+                </label>
                 <input
                   type="text"
                   value={newPrefix}
                   onChange={(e) => setNewPrefix(e.target.value)}
                   className="w-full px-3 py-2 bg-discord-bg text-white rounded focus:outline-none focus:ring-2 focus:ring-discord-blue"
-                  placeholder="kk"
+                  placeholder={activeTab === 'twitter' ? 'fxtwitter.com' : 'kk'}
                   required
                 />
               </div>
+              
+              {activeTab === 'twitter' && (
+                <div className="mb-4">
+                  <label className="block text-gray-300 mb-2">Type</label>
+                  <select
+                    value={newEmbedType}
+                    onChange={(e) => setNewEmbedType(e.target.value)}
+                    className="w-full px-3 py-2 bg-discord-bg text-white rounded focus:outline-none focus:ring-2 focus:ring-discord-blue"
+                  >
+                    <option value="prefix">Prefix (e.g., ggx.com)</option>
+                    <option value="replacement">Replace (e.g., fxtwitter.com)</option>
+                  </select>
+                  <p className="mt-2 text-sm text-gray-400">
+                    {newEmbedType === 'prefix' 
+                      ? 'Adds your text before the domain (x.com → ggx.com)'
+                      : 'Replaces the entire domain (x.com → fxtwitter.com)'}
+                  </p>
+                </div>
+              )}
+              
               <div className="flex space-x-3">
                 <button
                   type="submit"
@@ -385,7 +498,11 @@ export default function EmbedManager() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setShowAddModal(false)}
+                  onClick={() => {
+                    setShowAddModal(false)
+                    setNewPrefix('')
+                    setNewEmbedType('prefix')
+                  }}
                   className="flex-1 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition"
                 >
                   Cancel
