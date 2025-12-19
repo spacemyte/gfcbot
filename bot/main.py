@@ -46,8 +46,8 @@ feature_manager = FeatureManager(
 )
 
 # Store instances for access by cogs
-bot.db = db
-bot.feature_manager = feature_manager
+bot.db = db  # type: ignore
+bot.feature_manager = feature_manager  # type: ignore
 
 
 @bot.event

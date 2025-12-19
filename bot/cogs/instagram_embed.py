@@ -95,7 +95,8 @@ class InstagramEmbed(commands.Cog):
         
         # Upsert channel info (Discord channel ID and name)
         try:
-            await self.bot.db.upsert_channel(message.channel.id, message.channel.name)
+            channel_name = getattr(message.channel, 'name', 'unknown-channel')
+            await self.bot.db.upsert_channel(message.channel.id, channel_name)
         except Exception as e:
             logger.warning(f'Failed to upsert channel info: {e}')
         
@@ -186,6 +187,11 @@ class InstagramEmbed(commands.Cog):
         if not original_user_id:
             # Not a tracked webhook message
             logger.info(f'Message {webhook_message_id} is not a tracked webhook message')
+            return
+        
+        # Check if message is in a guild
+        if not message.guild:
+            logger.warning('Message has no guild, skipping webhook reply notification')
             return
         
         # Get the server config to check webhook reply notification settings
@@ -513,6 +519,10 @@ class InstagramEmbed(commands.Cog):
             error: Error message
         """
         # Log failure to database
+        if not message.guild:
+            logger.warning('Message has no guild, skipping failed embedding log')
+            return
+        
         await self.bot.db.insert_message_data(
             message_id=message.id,
             channel_id=message.channel.id,

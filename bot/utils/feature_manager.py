@@ -54,7 +54,7 @@ class FeatureManager:
         
         # Query database
         await self.db.connect()
-        async with self.db.pool.acquire() as conn:
+        async with self.db.pool.acquire() as conn:  # type: ignore
             result = await conn.fetchval(
                 """
                 SELECT check_permission($1, $2, $3, $4)
@@ -96,7 +96,7 @@ class FeatureManager:
             Feature UUID or None if not found
         """
         await self.db.connect()
-        async with self.db.pool.acquire() as conn:
+        async with self.db.pool.acquire() as conn:  # type: ignore
             result = await conn.fetchrow(
                 """
                 SELECT id FROM features WHERE name = $1 AND active = true
@@ -136,7 +136,7 @@ class FeatureManager:
         }
         
         await self.db.connect()
-        async with self.db.pool.acquire() as conn:
+        async with self.db.pool.acquire() as conn:  # type: ignore
             await conn.execute(
                 """
                 INSERT INTO feature_permissions (server_id, role_id, feature_id, actions)

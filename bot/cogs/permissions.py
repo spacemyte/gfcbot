@@ -41,7 +41,7 @@ class Permissions(commands.Cog):
             return
         
         # Check if user has admin permissions
-        if not interaction.user.guild_permissions.administrator:
+        if not isinstance(interaction.user, discord.Member) or not interaction.user.guild_permissions.administrator:
             await interaction.response.send_message("❌ You need administrator permissions to use this command.", ephemeral=True)
             return
         
@@ -145,7 +145,7 @@ class Permissions(commands.Cog):
     @app_commands.default_permissions(administrator=True)
     async def clear_cache(self, interaction: discord.Interaction):
         """Clear the permission cache."""
-        if not interaction.user.guild_permissions.administrator:
+        if not isinstance(interaction.user, discord.Member) or not interaction.user.guild_permissions.administrator:
             await interaction.response.send_message("❌ You need administrator permissions to use this command.", ephemeral=True)
             return
         

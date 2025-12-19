@@ -1,4 +1,4 @@
-import asyncpg
+import asyncpg  # type: ignore
 import logging
 from typing import Optional, List, Dict, Any
 from datetime import datetime
@@ -14,7 +14,7 @@ class Database:
         Upsert Discord user ID and username into users table.
         """
         await self.connect()
-        async with self.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:  # type: ignore
             await conn.execute(
                 """
                 INSERT INTO users (id, username, updated_at)
@@ -29,7 +29,7 @@ class Database:
         Upsert Discord channel ID and name into channels table.
         """
         await self.connect()
-        async with self.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:  # type: ignore
             await conn.execute(
                 """
                 INSERT INTO channels (id, name, updated_at)
@@ -90,7 +90,7 @@ class Database:
             server_id: Discord server ID
         """
         await self.connect()
-        async with self.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:  # type: ignore
             await conn.execute(
                 """
                 INSERT INTO pruning_config (server_id, enabled, max_days)
@@ -111,7 +111,7 @@ class Database:
             List of embed config dictionaries
         """
         await self.connect()
-        async with self.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:  # type: ignore
             rows = await conn.fetch(
                 """
                 SELECT id, prefix, priority, active
@@ -152,7 +152,7 @@ class Database:
             webhook_message_id: ID of webhook message if reposted
         """
         await self.connect()
-        async with self.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:  # type: ignore
             await conn.execute(
                 """
                 INSERT INTO message_data (
@@ -179,7 +179,7 @@ class Database:
             Original user ID if found, None otherwise
         """
         await self.connect()
-        async with self.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:  # type: ignore
             row = await conn.fetchrow(
                 """
                 SELECT user_id FROM message_data 
@@ -210,7 +210,7 @@ class Database:
             details: Additional details as JSON
         """
         await self.connect()
-        async with self.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:  # type: ignore
             await conn.execute(
                 """
                 INSERT INTO audit_logs (server_id, user_id, action, target_type, target_id, details)
@@ -230,7 +230,7 @@ class Database:
             Setting value or None if not found
         """
         await self.connect()
-        async with self.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:  # type: ignore
             row = await conn.fetchrow(
                 "SELECT value FROM bot_settings WHERE key = $1",
                 key
@@ -246,7 +246,7 @@ class Database:
             value: Setting value
         """
         await self.connect()
-        async with self.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:  # type: ignore
             await conn.execute(
                 """
                 INSERT INTO bot_settings (key, value, updated_at)
