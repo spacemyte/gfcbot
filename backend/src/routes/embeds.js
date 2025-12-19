@@ -2,14 +2,29 @@ const express = require("express");
 const router = express.Router();
 const { db } = require("../supabase");
 
-// Get embed configs for a server
+// Get embed configs for a server (optionally filter by featureId)
 router.get("/:serverId", async (req, res) => {
   try {
-    console.log("Fetching embeds for server:", req.params.serverId);
-    const result = await db.query(
-      "SELECT * FROM embed_configs WHERE server_id = $1 ORDER BY priority ASC",
-      [req.params.serverId]
+    const { featureId } = req.query;
+    console.log(
+      "Fetching embeds for server:",
+      req.params.serverId,
+      "featureId:",
+      featureId
     );
+
+    let result;
+    if (featureId) {
+      result = await db.query(
+        "SELECT * FROM embed_configs WHERE server_id = $1 AND feature_id = $2 ORDER BY priority ASC",
+        [req.params.serverId, featureId]
+      );
+    } else {
+      result = await db.query(
+        "SELECT * FROM embed_configs WHERE server_id = $1 ORDER BY priority ASC",
+        [req.params.serverId]
+      );
+    }
 
     console.log("Embeds fetched successfully:", result.rows);
     res.json(result.rows);

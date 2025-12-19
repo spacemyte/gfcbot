@@ -7,12 +7,15 @@ const API_URL = import.meta.env.VITE_API_URL || ''
 
 export default function EmbedManager() {
   const { serverId } = useParams()
-  const [embeds, setEmbeds] = useState([])
+  const [instagramEmbeds, setInstagramEmbeds] = useState([])
+  const [twitterEmbeds, setTwitterEmbeds] = useState([])
+  const [filteredEmbeds, setFilteredEmbeds] = useState([]) // embeds for current tab/feature
   const [loading, setLoading] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
   const [newPrefix, setNewPrefix] = useState('')
   const [newEmbedType, setNewEmbedType] = useState('prefix') // 'prefix' or 'replacement'
-  const [featureId, setFeatureId] = useState(null)
+  const [instagramFeatureId, setInstagramFeatureId] = useState(null)
+  const [twitterFeatureId, setTwitterFeatureId] = useState(null)
   const [activeTab, setActiveTab] = useState('instagram') // 'instagram' or 'twitter'
   
   // Instagram embed config state
@@ -34,11 +37,26 @@ export default function EmbedManager() {
   const [configMessage, setConfigMessage] = useState(null)
 
   useEffect(() => {
-    fetchEmbeds()
-    fetchFeatureId()
+    fetchFeatureIds()
     fetchInstagramConfig()
     fetchTwitterConfig()
   }, [serverId])
+
+  useEffect(() => {
+    // Refetch embeds once feature IDs are known
+    if (instagramFeatureId || twitterFeatureId) {
+      fetchEmbeds()
+    }
+  }, [serverId, instagramFeatureId, twitterFeatureId])
+
+  useEffect(() => {
+    // Update filtered list when tab or per-feature lists change
+    if (activeTab === 'instagram') {
+      setFilteredEmbeds(instagramFeatureId ? instagramEmbeds : [])
+    } else {
+      setFilteredEmbeds(twitterFeatureId ? twitterEmbeds : [])
+    }
+  }, [activeTab, instagramEmbeds, twitterEmbeds, instagramFeatureId, twitterFeatureId])
 
   const fetchInstagramConfig = async () => {
     setConfigLoading(true)
@@ -108,16 +126,20 @@ export default function EmbedManager() {
     }
   }
 
-  const fetchFeatureId = async () => {
+  const fetchFeatureIds = async () => {
     try {
       const response = await axios.get(`${API_URL}/api/features`)
-      console.log('Features response:', response.data)
       const instagramFeature = response.data.find(f => f.name === 'instagram_embed')
-      console.log('Instagram feature:', instagramFeature)
+      const twitterFeature = response.data.find(f => f.name === 'twitter_embed')
       if (instagramFeature) {
-        setFeatureId(instagramFeature.id)
+        setInstagramFeatureId(instagramFeature.id)
       } else {
         console.warn('Instagram embed feature not found')
+      }
+      if (twitterFeature) {
+        setTwitterFeatureId(twitterFeature.id)
+      } else {
+        console.warn('Twitter/X embed feature not found')
       }
     } catch (error) {
       console.error('Error fetching features:', error)
@@ -126,8 +148,26 @@ export default function EmbedManager() {
 
   const fetchEmbeds = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/embeds/${serverId}`)
-      setEmbeds(response.data)
+      // Fetch Instagram embeds
+      if (instagramFeatureId) {
+        const resIg = await axios.get(`${API_URL}/api/embeds/${serverId}`, {
+          params: { featureId: instagramFeatureId }
+        })
+        setInstagramEmbeds(resIg.data)
+      } else {
+        setInstagramEmbeds([])
+      }
+
+      // Fetch Twitter embeds
+      if (twitterFeatureId) {
+        const resTw = await axios.get(`${API_URL}/api/embeds/${serverId}`, {
+          params: { featureId: twitterFeatureId }
+        })
+        setTwitterEmbeds(resTw.data)
+      } else {
+        setTwitterEmbeds([])
+      }
+
     } catch (error) {
       console.error('Error fetching embeds:', error)
     } finally {
@@ -138,16 +178,22 @@ export default function EmbedManager() {
   const handleDragEnd = async (result) => {
     if (!result.destination) return
 
-    const items = Array.from(embeds)
+    const items = Array.from(filteredEmbeds)
     const [reorderedItem] = items.splice(result.source.index, 1)
     items.splice(result.destination.index, 0, reorderedItem)
 
-    setEmbeds(items)
+    // Apply new order to filtered list and update global list priorities
+    const reorderedIds = items.map(item => item.id)
 
-    // Update priority order in backend
+    // Update backend with only the filtered IDs order
     try {
-      const embedIds = items.map(item => item.id)
-      await axios.post(`${API_URL}/api/embeds/${serverId}/reorder`, { embedIds })
+      await axios.post(`${API_URL}/api/embeds/${serverId}/reorder`, { embedIds: reorderedIds })
+      // Update local state only for the active tab
+      if (activeTab === 'instagram') {
+        setInstagramEmbeds(items.map((e, idx) => ({ ...e, priority: idx })))
+      } else {
+        setTwitterEmbeds(items.map((e, idx) => ({ ...e, priority: idx })))
+      }
     } catch (error) {
       console.error('Error reordering embeds:', error)
       fetchEmbeds() // Revert on error
@@ -156,6 +202,7 @@ export default function EmbedManager() {
 
   const handleAddEmbed = async (e) => {
     e.preventDefault()
+    const featureId = activeTab === 'instagram' ? instagramFeatureId : twitterFeatureId
     console.log('Add embed clicked. Feature ID:', featureId, 'New prefix:', newPrefix)
     
     if (!newPrefix.trim()) {
@@ -172,22 +219,27 @@ export default function EmbedManager() {
       console.log('Sending add embed request:', {
         prefix: newPrefix.trim(),
         feature_id: featureId,
-        embed_type: newEmbedType,
+        embed_type: activeTab === 'twitter' ? newEmbedType : 'prefix',
         active: true,
         priority: embeds.length
       })
       const response = await axios.post(`${API_URL}/api/embeds/${serverId}`, {
         prefix: newPrefix.trim(),
         feature_id: featureId,
-        embed_type: newEmbedType,
+        embed_type: activeTab === 'twitter' ? newEmbedType : 'prefix',
         active: true,
-        priority: embeds.length
+        priority: filteredEmbeds.length
       })
       console.log('Add embed response:', response.data)
       setNewPrefix('')
       setNewEmbedType('prefix')
       setShowAddModal(false)
-      fetchEmbeds()
+      // Update local list for current tab
+      if (activeTab === 'instagram') {
+        setInstagramEmbeds(prev => [...prev, response.data])
+      } else {
+        setTwitterEmbeds(prev => [...prev, response.data])
+      }
     } catch (error) {
       console.error('Error adding embed:', error.response?.data || error.message)
       alert('Failed to add embed prefix: ' + (error.response?.data?.error || error.message))
@@ -199,7 +251,11 @@ export default function EmbedManager() {
       await axios.put(`${API_URL}/api/embeds/${serverId}/${embedId}`, {
         active: !currentActive
       })
-      fetchEmbeds()
+      if (activeTab === 'instagram') {
+        setInstagramEmbeds(prev => prev.map(e => e.id === embedId ? { ...e, active: !currentActive } : e))
+      } else {
+        setTwitterEmbeds(prev => prev.map(e => e.id === embedId ? { ...e, active: !currentActive } : e))
+      }
     } catch (error) {
       console.error('Error toggling embed:', error)
     }
@@ -210,7 +266,11 @@ export default function EmbedManager() {
 
     try {
       await axios.delete(`${API_URL}/api/embeds/${serverId}/${embedId}`)
-      fetchEmbeds()
+      if (activeTab === 'instagram') {
+        setInstagramEmbeds(prev => prev.filter(e => e.id !== embedId))
+      } else {
+        setTwitterEmbeds(prev => prev.filter(e => e.id !== embedId))
+      }
     } catch (error) {
       console.error('Error deleting embed:', error)
     }
@@ -375,7 +435,11 @@ export default function EmbedManager() {
           <p className="mt-2 text-gray-400">Drag and drop to reorder priority</p>
         </div>
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={() => {
+            setShowAddModal(true)
+            setNewEmbedType('prefix')
+            setNewPrefix('')
+          }}
           className="px-4 py-2 bg-discord-green text-white rounded-md hover:bg-green-600 transition"
         >
           Add Prefix
@@ -390,8 +454,8 @@ export default function EmbedManager() {
               ref={provided.innerRef}
               className="space-y-3"
             >
-              {embeds.length > 0 ? (
-                embeds.map((embed, index) => (
+              {filteredEmbeds.length > 0 ? (
+                filteredEmbeds.map((embed, index) => (
                   <Draggable key={embed.id} draggableId={embed.id} index={index}>
                     {(provided) => (
                       <div
