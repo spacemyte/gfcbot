@@ -40,7 +40,7 @@ router.get("/:serverId", async (req, res) => {
 
     // Get data with pagination
     const dataResult = await db.query(
-      `SELECT * FROM audit_logs ${whereClause} ORDER BY created_at DESC LIMIT $${paramCount} OFFSET $${
+      `SELECT * FROM audit_logs ${whereClause} ORDER BY timestamp DESC LIMIT $${paramCount} OFFSET $${
         paramCount + 1
       }`,
       [...params, limitNum, offsetNum]

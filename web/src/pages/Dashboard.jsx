@@ -57,19 +57,27 @@ export default function Dashboard({ user }) {
         <ul className="space-y-2 text-gray-300">
           <li className="flex items-center">
             <span className="text-discord-green mr-2">✓</span>
-            Instagram URL Embedding with priority-based fallback
+            Instagram & Twitter/X link embeds with per-server prefixes
           </li>
           <li className="flex items-center">
             <span className="text-discord-green mr-2">✓</span>
-            URL validation before message modification
+            Prefix manager: order, enable/disable, per-feature scoping
           </li>
           <li className="flex items-center">
             <span className="text-discord-green mr-2">✓</span>
-            Comprehensive audit logging
+            Replacement mode for X: domain swap instead of prefix
           </li>
           <li className="flex items-center">
             <span className="text-discord-green mr-2">✓</span>
-            Configurable data retention
+            Webhook repost + reply notifications (optional)
+          </li>
+          <li className="flex items-center">
+            <span className="text-discord-green mr-2">✓</span>
+            Suppress original Discord embeds when configured
+          </li>
+          <li className="flex items-center">
+            <span className="text-discord-green mr-2">✓</span>
+            Audit logs, URL history, and pruning controls
           </li>
         </ul>
       </div>

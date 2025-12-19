@@ -134,6 +134,8 @@ class InstagramEmbed(commands.Cog):
                 server_id=message.guild.id,
                 user_id=message.author.id,
                 action='url_detected',
+                target_type='message',
+                target_id=str(message.id),
                 details={
                     'original_url': original_url,
                     'message_id': message.id
@@ -167,6 +169,8 @@ class InstagramEmbed(commands.Cog):
                     server_id=message.guild.id,
                     user_id=message.author.id,
                     action='already_embedded',
+                    target_type='message',
+                    target_id=str(message.id),
                     details={
                         'original_url': original_url,
                         'message_id': message.id
@@ -317,6 +321,8 @@ class InstagramEmbed(commands.Cog):
                                 server_id=guild.id,
                                 user_id=message.author.id,
                                 action='reposted_with_webhook',
+                                target_type='webhook_message',
+                                target_id=str(webhook_msg.id),
                                 details={
                                     'original_url': original_url,
                                     'embedded_url': embedded_url,
@@ -350,6 +356,8 @@ class InstagramEmbed(commands.Cog):
                                 server_id=guild.id,
                                 user_id=message.author.id,
                                 action='embedded_with_reply',
+                                target_type='message',
+                                target_id=str(message.id),
                                 details={
                                     'original_url': original_url,
                                     'embedded_url': embedded_url,
@@ -400,6 +408,8 @@ class InstagramEmbed(commands.Cog):
                             server_id=guild.id,
                             user_id=message.author.id,
                             action='embedded_with_reply_forbidden',
+                            target_type='message',
+                            target_id=str(message.id),
                             details={
                                 'original_url': original_url,
                                 'embedded_url': embedded_url,
@@ -420,6 +430,8 @@ class InstagramEmbed(commands.Cog):
             server_id=guild.id,
             user_id=message.author.id,
             action='embed_failed',
+            target_type='message',
+            target_id=str(message.id),
             details={
                 'original_url': original_url,
                 'error': 'All embed prefixes failed validation',
