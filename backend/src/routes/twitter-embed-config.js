@@ -31,7 +31,11 @@ router.get("/:serverId", async (req, res) => {
         reaction_emoji: "🙏",
       });
     }
-    res.json(result.rows[0]);
+    const row = result.rows[0];
+    // Apply fallbacks for nullable fields
+    row.reaction_enabled = row.reaction_enabled ?? true;
+    row.reaction_emoji = row.reaction_emoji ?? "🙏";
+    res.json(row);
   } catch (error) {
     console.error("Error fetching twitter embed config:", error);
     res.status(500).json({ error: "Failed to fetch config" });
