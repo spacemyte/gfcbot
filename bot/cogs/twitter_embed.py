@@ -54,7 +54,6 @@ class TwitterEmbed(commands.Cog):
             'pruning_enabled': True,
             'pruning_max_days': 90,
             'webhook_reply_notifications': True,
-            'notify_self_replies': False,
             'suppress_original_embed': True,
             'reaction_enabled': True,
             'reaction_emoji': '🙏'
