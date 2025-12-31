@@ -151,14 +151,24 @@ class InstagramEmbed(commands.Cog):
             logger.warning('instagram_embed feature id not found; skipping embed processing')
             return
         embed_configs = await self.bot.db.get_embed_configs(message.guild.id, self.instagram_feature_id)
-        prefixes = [c['prefix'] for c in embed_configs] if embed_configs else []
         
-        # Check if URL already uses a configured prefix
+        # Check if URL already uses a configured embed (prefix or replacement)
         already_embedded = False
-        for prefix in prefixes:
-            if f'{prefix}instagram.com' in original_url.lower():
-                already_embedded = True
-                break
+        if embed_configs:
+            for embed_config in embed_configs:
+                prefix = embed_config['prefix']
+                embed_type = embed_config.get('embed_type', 'prefix')
+                
+                if embed_type == 'replacement':
+                    # For replacement mode, check if the URL contains the replacement domain
+                    if prefix.lower() in original_url.lower():
+                        already_embedded = True
+                        break
+                else:
+                    # For prefix mode, check if prefix is added before instagram.com
+                    if f'{prefix}instagram.com' in original_url.lower():
+                        already_embedded = True
+                        break
         
         if already_embedded:
             try:
