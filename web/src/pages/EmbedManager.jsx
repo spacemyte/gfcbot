@@ -85,7 +85,9 @@ export default function EmbedManager() {
           pruning_enabled: true,
           pruning_max_days: 90,
           reaction_enabled: true,
-          reaction_emoji: '🙏'
+          reaction_emoji: '🙏',
+          silence_restricted_warning: false,
+          restricted_warning_message: 'Cannot embed restricted content, please login to the original URL to view'
         })
       } else {
         console.error('Error fetching Instagram embed config:', error)
@@ -107,7 +109,9 @@ export default function EmbedManager() {
           pruning_enabled: true,
           pruning_max_days: 90,
           reaction_enabled: true,
-          reaction_emoji: '🙏'
+          reaction_emoji: '🙏',
+          silence_restricted_warning: false,
+          restricted_warning_message: 'Cannot embed restricted content, please login to the original URL to view'
         })
       } else {
         console.error('Error fetching Twitter embed config:', error)
@@ -361,7 +365,7 @@ export default function EmbedManager() {
                 </label>
                 <textarea
                   id="restricted-warning-message"
-                  value={currentConfig.restricted_warning_message}
+                  value={currentConfig.restricted_warning_message || ''}
                   onChange={e => activeTab === 'instagram'
                     ? handleInstagramConfigChange('restricted_warning_message', e.target.value)
                     : handleTwitterConfigChange('restricted_warning_message', e.target.value)
@@ -374,7 +378,7 @@ export default function EmbedManager() {
                   rows="3"
                 />
                 <div className="text-gray-400 text-xs mt-1">
-                  {currentConfig.restricted_warning_message.length}/255 characters
+                  {(currentConfig.restricted_warning_message || '').length}/255 characters
                 </div>
               </div>
             </div>
