@@ -31,10 +31,10 @@ class TwitterEmbed(commands.Cog):
     async def get_twitter_embed_config(self, guild_id: int) -> Dict:
         if not self.session:
             self.session = aiohttp.ClientSession()
-        # Cache for 60 seconds per guild (faster config updates)
+        # Cache for 30 seconds per guild (faster config updates)
         now = datetime.utcnow().timestamp()
         cache_entry = self.config_cache.get(guild_id)
-        if cache_entry and (now - cache_entry.get('fetched_at', 0) < 60):
+        if cache_entry and (now - cache_entry.get('fetched_at', 0) < 30):
             return cache_entry['config']
         # Fetch from bot-accessible endpoint (no auth required)
         url = f"{self.api_url}/api/bot/twitter-embed-config/{guild_id}"

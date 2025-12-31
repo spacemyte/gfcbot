@@ -20,7 +20,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 let botGuildCache = { ids: [], fetchedAt: 0 };
-const BOT_GUILD_CACHE_TTL_MS = 1 * 60 * 1000; // 1 minute instead of 5
+const BOT_GUILD_CACHE_TTL_MS = 30 * 1000; // 30 seconds for faster updates
 
 // Log database configuration
 console.log("✓ Using PostgreSQL (DATABASE_URL)");

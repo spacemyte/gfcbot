@@ -22,7 +22,7 @@ export default function AuditLogs() {
 
     const interval = setInterval(() => {
       fetchLogs()
-    }, 5000)
+    }, 2000)
 
     return () => clearInterval(interval)
   }, [serverId, page, autoRefresh])

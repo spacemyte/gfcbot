@@ -12,12 +12,24 @@ export default function URLHistory() {
   const [filter, setFilter] = useState('all')
   const [page, setPage] = useState(0)
   const [totalCount, setTotalCount] = useState(0)
+  const [autoRefresh, setAutoRefresh] = useState(false)
   const limit = 50
 
   useEffect(() => {
     fetchMessages()
     fetchStats()
   }, [serverId, filter, page])
+
+  useEffect(() => {
+    if (!autoRefresh) return
+
+    const interval = setInterval(() => {
+      fetchMessages()
+      fetchStats()
+    }, 2000)
+
+    return () => clearInterval(interval)
+  }, [serverId, filter, page, autoRefresh])
 
   const fetchMessages = async () => {
     try {
@@ -77,7 +89,7 @@ export default function URLHistory() {
       </div>
 
       {/* Filters */}
-      <div className="flex space-x-2">
+      <div className="flex space-x-2 items-center">
         <button
           onClick={() => { setFilter('all'); setPage(0); }}
           className={`px-4 py-2 rounded ${filter === 'all' ? 'bg-discord-blue' : 'bg-discord-bg-light'} text-white transition`}
@@ -96,6 +108,15 @@ export default function URLHistory() {
         >
           Failed
         </button>
+        <div className="ml-auto flex items-center space-x-2">
+          <label className="text-gray-400 text-sm">Auto-refresh:</label>
+          <button
+            onClick={() => setAutoRefresh(!autoRefresh)}
+            className={`px-4 py-2 rounded transition ${autoRefresh ? 'bg-discord-green' : 'bg-discord-bg-light'} text-white`}
+          >
+            {autoRefresh ? '✓ On' : 'Off'}
+          </button>
+        </div>
       </div>
 
       {/* Messages List */}
