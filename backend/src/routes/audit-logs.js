@@ -17,7 +17,7 @@ router.get("/:serverId", async (req, res) => {
     const limitNum = parseInt(limit);
     const offsetNum = parseInt(offset);
 
-    let whereClause = "WHERE server_id = $1";
+    let whereClause = "WHERE server_id = $1 AND deleted_at IS NULL";
     let params = [req.params.serverId];
     let paramCount = 2;
 
@@ -70,7 +70,7 @@ router.get("/:serverId", async (req, res) => {
 router.get("/:serverId/actions", async (req, res) => {
   try {
     const result = await db.query(
-      `SELECT DISTINCT action FROM audit_logs WHERE server_id = $1 ORDER BY action`,
+      `SELECT DISTINCT action FROM audit_logs WHERE server_id = $1 AND deleted_at IS NULL ORDER BY action`,
       [req.params.serverId]
     );
 
@@ -79,6 +79,48 @@ router.get("/:serverId/actions", async (req, res) => {
   } catch (error) {
     console.error("Error fetching actions:", error);
     res.status(500).json({ error: "Failed to fetch actions" });
+  }
+});
+
+// Soft-delete a single audit log
+router.delete("/:serverId/:logId", async (req, res) => {
+  try {
+    const { serverId, logId } = req.params;
+    const result = await db.query(
+      "UPDATE audit_logs SET deleted_at = NOW() WHERE id = $1 AND server_id = $2 AND deleted_at IS NULL RETURNING id",
+      [logId, serverId]
+    );
+
+    if (result.rowCount === 0) {
+      return res
+        .status(404)
+        .json({ error: "Audit log not found or already deleted" });
+    }
+
+    res.json({ success: true, message: "Audit log soft-deleted" });
+  } catch (error) {
+    console.error("Error deleting audit log:", error);
+    res.status(500).json({ error: "Failed to delete audit log" });
+  }
+});
+
+// Soft-delete all audit logs for a server
+router.delete("/:serverId", async (req, res) => {
+  try {
+    const { serverId } = req.params;
+    const result = await db.query(
+      "UPDATE audit_logs SET deleted_at = NOW() WHERE server_id = $1 AND deleted_at IS NULL",
+      [serverId]
+    );
+
+    res.json({
+      success: true,
+      message: "All audit logs soft-deleted",
+      deletedCount: result.rowCount,
+    });
+  } catch (error) {
+    console.error("Error clearing audit logs:", error);
+    res.status(500).json({ error: "Failed to clear audit logs" });
   }
 });
 

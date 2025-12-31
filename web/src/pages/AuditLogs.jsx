@@ -53,10 +53,42 @@ export default function AuditLogs() {
   }
 
   const getActionBadgeColor = (action) => {
-    if (action.includes('created')) return 'bg-discord-green'
-    if (action.includes('updated')) return 'bg-discord-yellow'
-    if (action.includes('deleted')) return 'bg-discord-red'
-    return 'bg-gray-600'
+    if (action.includes('created')) return 'bg-green-600 text-white'
+    if (action.includes('updated')) return 'bg-yellow-600 text-white'
+    if (action.includes('deleted')) return 'bg-red-600 text-white'
+    return 'bg-gray-600 text-white'
+  }
+
+  const handleDeleteLog = async (logId) => {
+    if (!confirm('Are you sure you want to delete this audit log? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      await axios.delete(`${API_URL}/api/audit-logs/${serverId}/${logId}`)
+      fetchLogs() // Refresh the list
+    } catch (error) {
+      console.error('Error deleting audit log:', error)
+      alert('Failed to delete audit log')
+    }
+  }
+
+  const handleClearAll = async () => {
+    if (!confirm('⚠️ WARNING: This will delete ALL audit logs for this server. Are you absolutely sure?')) {
+      return
+    }
+    if (!confirm('This action CANNOT be undone. Proceed with clearing all audit logs?')) {
+      return
+    }
+
+    try {
+      await axios.delete(`${API_URL}/api/audit-logs/${serverId}`)
+      setPage(0)
+      fetchLogs() // Refresh the list
+    } catch (error) {
+      console.error('Error clearing audit logs:', error)
+      alert('Failed to clear audit logs')
+    }
   }
 
   if (loading) {
@@ -73,6 +105,13 @@ export default function AuditLogs() {
           <p className="mt-2 text-gray-400">Track all changes and actions in your server</p>
         </div>
         <div className="flex gap-2">
+          <button
+            onClick={handleClearAll}
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition flex items-center gap-2"
+            disabled={logs.length === 0}
+          >
+            <span>🗑️</span> Clear All
+          </button>
           <button
             onClick={() => {
               setPage(0)
@@ -113,6 +152,9 @@ export default function AuditLogs() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                   Details
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
@@ -126,7 +168,7 @@ export default function AuditLogs() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
-                      className={`px-2 py-1 text-xs rounded ${getActionBadgeColor(log.action)} text-white`}
+                      className={`px-2 py-1 text-xs rounded ${getActionBadgeColor(log.action)}`}
                     >
                       {log.action}
                     </span>
@@ -143,6 +185,14 @@ export default function AuditLogs() {
                         {JSON.stringify(log.details, null, 2)}
                       </pre>
                     )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <button
+                      onClick={() => handleDeleteLog(log.id)}
+                      className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition text-xs"
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}
