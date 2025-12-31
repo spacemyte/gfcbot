@@ -40,12 +40,10 @@ app.use(
     resave: false,
     saveUninitialized: true,
     cookie: {
-      secure: process.env.NODE_ENV === "production",
+      secure: true,
       httpOnly: true,
       sameSite: "none",
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      domain:
-        process.env.NODE_ENV === "production" ? ".up.railway.app" : undefined,
     },
     proxy: true,
   })
@@ -105,15 +103,30 @@ app.get(
     failureRedirect: process.env.FRONTEND_URL,
   }),
   (req, res) => {
-    // If user selected "Remember me", extend session to 30 days
-    if (req.session.rememberMe) {
-      req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
-      delete req.session.rememberMe; // Clean up the temp flag
+    try {
+      // If user selected "Remember me", extend session to 30 days
+      if (req.session.rememberMe) {
+        req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+        delete req.session.rememberMe; // Clean up the temp flag
+      }
+      // Save session explicitly before redirect
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session save error:", err);
+          return res
+            .status(500)
+            .json({ error: "Session save failed", details: err.message });
+        }
+        console.log("Discord auth successful, user:", req.user?.username);
+        console.log("Session ID:", req.sessionID);
+        res.redirect(process.env.FRONTEND_URL + "/dashboard");
+      });
+    } catch (error) {
+      console.error("Auth callback error:", error);
+      res
+        .status(500)
+        .json({ error: "Authentication failed", details: error.message });
     }
-    // Session should be established here
-    console.log("Discord auth successful, user:", req.user?.username);
-    console.log("Session ID:", req.sessionID);
-    res.redirect(process.env.FRONTEND_URL + "/dashboard");
   }
 );
 
@@ -163,8 +176,6 @@ app.get("/auth/logout", (req, res, next) => {
         httpOnly: true,
         secure: true,
         sameSite: "none",
-        domain:
-          process.env.NODE_ENV === "production" ? ".up.railway.app" : undefined,
       });
       res.json({ success: true });
     });
@@ -327,8 +338,16 @@ cron.schedule("0 2 * * *", async () => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: "Internal server error" });
+  console.error("=== ERROR ===");
+  console.error("Path:", req.path);
+  console.error("Method:", req.method);
+  console.error("Error:", err.message);
+  console.error("Stack:", err.stack);
+  res.status(err.status || 500).json({
+    error: "Internal server error",
+    message: err.message,
+    path: req.path,
+  });
 });
 
 // Start server
