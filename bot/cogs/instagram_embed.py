@@ -587,8 +587,8 @@ class InstagramEmbed(commands.Cog):
     
     async def _is_age_restricted(self, url: str, timeout: int = 5) -> bool:
         """
-        Check if an Instagram URL is age-restricted by using a third-party
-        scraper service to detect access restrictions.
+        Check if an Instagram URL is age-restricted by using scraper services
+        (similar to Nitter for Twitter) to detect access restrictions.
         
         Args:
             url: Instagram URL to check
@@ -600,36 +600,47 @@ class InstagramEmbed(commands.Cog):
         if not self.session:
             return False
         
-        try:
-            # Try using kkinstagram.com as a scraper to check for age restrictions
-            # Age-restricted content will show "open in app" message on scraper services
-            scraper_url = url.replace('instagram.com', 'kkinstagram.com')
-            
-            async with self.session.get(scraper_url, timeout=timeout, allow_redirects=True, ssl=False) as response:
-                if response.status == 200:
-                    try:
-                        text = await response.text()
-                        # Check for indicators that the content is age-restricted on scraper
-                        age_gate_markers = [
-                            'open in app',
-                            'to continue to instagram',
-                            'restricted',
-                            'age restricted',
-                            'sensitive content',
-                            'content warning',
-                            'cannot access',
-                            'is not available',
-                            'post is not available'
-                        ]
-                        for marker in age_gate_markers:
-                            if marker.lower() in text.lower():
-                                logger.info(f'Age-restricted content detected via scraper for URL: {url}')
-                                return True
-                    except Exception as e:
-                        logger.warning(f'Error checking age-restriction via scraper for {url}: {e}')
-                        return False
-        except Exception as e:
-            logger.warning(f'Error validating age-restriction for {url}: {e}')
+        # Try multiple Instagram scraper services (like Nitter for Instagram)
+        scraper_services = [
+            lambda u: u.replace('instagram.com', 'proxigram.com'),
+            lambda u: u.replace('instagram.com', 'picnob.com'),
+            lambda u: u.replace('instagram.com', 'kkinstagram.com'),
+        ]
+        
+        for scraper_fn in scraper_services:
+            try:
+                scraper_url = scraper_fn(url)
+                async with self.session.get(scraper_url, timeout=timeout, allow_redirects=True, ssl=False) as response:
+                    if response.status == 200:
+                        try:
+                            text = await response.text()
+                            # Check for indicators that the content is age-restricted on scraper
+                            age_gate_markers = [
+                                'open in app',
+                                'to continue to instagram',
+                                'restricted',
+                                'age restricted',
+                                'sensitive content',
+                                'content warning',
+                                'cannot access',
+                                'is not available',
+                                'post is not available',
+                                'this account is private',
+                                'user not found'
+                            ]
+                            for marker in age_gate_markers:
+                                if marker.lower() in text.lower():
+                                    logger.info(f'Age-restricted content detected via scraper for URL: {url}')
+                                    return True
+                        except Exception as e:
+                            logger.debug(f'Error checking age-restriction via {scraper_url}: {e}')
+                            continue
+                    elif response.status == 403:
+                        logger.info(f'Age-restricted content detected (403 Forbidden) at {scraper_url}')
+                        return True
+            except Exception as e:
+                logger.debug(f'Error accessing scraper service for {url}: {e}')
+                continue
         
         return False
         

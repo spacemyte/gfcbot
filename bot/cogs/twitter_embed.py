@@ -506,8 +506,8 @@ class TwitterEmbed(commands.Cog):
     
     async def _is_age_restricted(self, url: str, timeout: int = 5) -> bool:
         """
-        Check if a Twitter/X URL is age-restricted by using a scraper service
-        to detect access restrictions.
+        Check if a Twitter/X URL is age-restricted by using scraper services
+        (like Nitter) to detect access restrictions.
         
         Args:
             url: Twitter/X URL to check
@@ -519,12 +519,15 @@ class TwitterEmbed(commands.Cog):
         if not self.session:
             self.session = aiohttp.ClientSession()
         
-        try:
-            # Try using nitter.net as a scraper to check for age restrictions
-            # Age-restricted content will show restriction messages on scraper services
-            if 'twitter.com' in url or 'x.com' in url:
-                scraper_url = url.replace('twitter.com', 'nitter.net').replace('x.com', 'nitter.net')
-                
+        # Try multiple Twitter scraper services
+        scraper_services = [
+            lambda u: u.replace('twitter.com', 'nitter.net').replace('x.com', 'nitter.net'),
+            lambda u: u.replace('twitter.com', 'nitter.poast.org').replace('x.com', 'nitter.poast.org'),
+        ]
+        
+        for scraper_fn in scraper_services:
+            try:
+                scraper_url = scraper_fn(url)
                 async with self.session.get(scraper_url, timeout=timeout, allow_redirects=True, ssl=False) as response:
                     if response.status == 200:
                         try:
@@ -537,17 +540,23 @@ class TwitterEmbed(commands.Cog):
                                 'restricted',
                                 'cannot access',
                                 'open the app',
-                                'viewer is restricted'
+                                'viewer is restricted',
+                                'tweet not found',
+                                'account suspended'
                             ]
                             for marker in age_gate_markers:
                                 if marker.lower() in text.lower():
                                     logger.info(f'Age-restricted content detected via scraper for URL: {url}')
                                     return True
                         except Exception as e:
-                            logger.warning(f'Error checking age-restriction via scraper for {url}: {e}')
-                            return False
-        except Exception as e:
-            logger.warning(f'Error validating age-restriction for {url}: {e}')
+                            logger.debug(f'Error checking age-restriction via {scraper_url}: {e}')
+                            continue
+                    elif response.status == 403:
+                        logger.info(f'Age-restricted content detected (403 Forbidden) at {scraper_url}')
+                        return True
+            except Exception as e:
+                logger.debug(f'Error accessing scraper service for {url}: {e}')
+                continue
         
         return False
                             if marker.lower() in text.lower():
