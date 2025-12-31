@@ -395,7 +395,7 @@ export default function EmbedManager() {
             </div>
             
             {/* Reaction Emoji Picker */}
-            <div>
+            <div className={currentConfig.reaction_enabled ? '' : 'opacity-50 pointer-events-none'}>
               <label className="block text-gray-300 mb-2">
                 Reaction Emoji (for already-embedded URLs)
               </label>
@@ -423,6 +423,25 @@ export default function EmbedManager() {
                   <p className="mt-2 text-sm text-gray-400">
                     Choose which emoji the bot reacts with when a user posts an already-embedded URL
                   </p>
+                  <div className="mt-4 pt-4 border-t border-gray-600">
+                    <label className="block text-gray-400 text-sm mb-2">
+                      Or enter a custom emoji or server emoji name (e.g., :customEmoji:)
+                    </label>
+                    <input
+                      type="text"
+                      value={currentConfig.reaction_emoji || ''}
+                      onChange={e => activeTab === 'instagram'
+                        ? handleInstagramConfigChange('reaction_emoji', e.target.value)
+                        : handleTwitterConfigChange('reaction_emoji', e.target.value)
+                      }
+                      placeholder="🎉 or :custom_emoji:"
+                      maxLength="50"
+                      disabled={!currentConfig.reaction_enabled}
+                      className={`w-full px-3 py-2 bg-discord-bg text-white rounded focus:outline-none focus:ring-2 focus:ring-discord-blue ${
+                        !currentConfig.reaction_enabled ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
