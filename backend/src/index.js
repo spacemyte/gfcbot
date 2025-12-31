@@ -77,6 +77,13 @@ passport.deserializeUser((obj, done) => {
 
 // Authentication middleware
 const isAuthenticated = (req, res, next) => {
+  console.log("[Auth Check]", {
+    path: req.path,
+    sessionID: req.sessionID,
+    isAuthenticated: req.isAuthenticated(),
+    user: req.user?.username || "none",
+    cookies: req.headers.cookie ? "present" : "missing",
+  });
   if (req.isAuthenticated()) {
     return next();
   }
@@ -104,6 +111,13 @@ app.get(
   }),
   (req, res) => {
     try {
+      console.log("[Auth Callback]", {
+        user: req.user?.username,
+        sessionID: req.sessionID,
+        isAuthenticated: req.isAuthenticated(),
+        rememberMe: req.session.rememberMe || false,
+      });
+
       // If user selected "Remember me", extend session to 30 days
       if (req.session.rememberMe) {
         req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -112,17 +126,19 @@ app.get(
       // Save session explicitly before redirect
       req.session.save((err) => {
         if (err) {
-          console.error("Session save error:", err);
+          console.error("[Auth Callback] Session save error:", err);
           return res
             .status(500)
             .json({ error: "Session save failed", details: err.message });
         }
-        console.log("Discord auth successful, user:", req.user?.username);
-        console.log("Session ID:", req.sessionID);
+        console.log(
+          "[Auth Callback] Session saved, redirecting to:",
+          process.env.FRONTEND_URL + "/dashboard"
+        );
         res.redirect(process.env.FRONTEND_URL + "/dashboard");
       });
     } catch (error) {
-      console.error("Auth callback error:", error);
+      console.error("[Auth Callback] Error:", error);
       res
         .status(500)
         .json({ error: "Authentication failed", details: error.message });

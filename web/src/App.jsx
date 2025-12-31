@@ -19,20 +19,34 @@ function App() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    checkAuth()
-    // Check auth again after 1 second in case of slow redirect/session setup
-    const timer = setTimeout(checkAuth, 1000)
-    return () => clearTimeout(timer)
+    // Check if we just came back from OAuth redirect
+    const isOAuthReturn = window.location.pathname === '/dashboard' && !user && loading
+    checkAuth(isOAuthReturn)
   }, [])
 
-  const checkAuth = async () => {
+  const checkAuth = async (isOAuthReturn = false, attempt = 1) => {
     try {
-      const response = await axios.get(`${API_URL}/auth/user`)
+      console.log(`[Auth Check] Attempt ${attempt}, OAuth return: ${isOAuthReturn}`)
+      const response = await axios.get(`${API_URL}/auth/user`, {
+        timeout: 10000, // 10 second timeout
+      })
+      console.log('[Auth Check] Success:', response.data.username)
       setUser(response.data)
+      setLoading(false)
     } catch (error) {
-      console.log('Not authenticated')
+      console.log(`[Auth Check] Failed (${error.response?.status || error.message})`)
+      
+      // If this is an OAuth return and we haven't tried enough times, retry
+      if (isOAuthReturn && attempt < 5) {
+        const delayMs = Math.min(1000 * Math.pow(1.5, attempt - 1), 5000) // Exponential backoff, max 5s
+        console.log(`[Auth Check] Retrying in ${delayMs}ms (attempt ${attempt}/5)`)
+        setTimeout(() => {
+          checkAuth(isOAuthReturn, attempt + 1)
+        }, delayMs)
+        return
+      }
+      
       setUser(null)
-    } finally {
       setLoading(false)
     }
   }
