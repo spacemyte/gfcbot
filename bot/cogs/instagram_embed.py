@@ -56,6 +56,7 @@ class InstagramEmbed(commands.Cog):
             'webhook_reply_notifications': True,
             'notify_self_replies': False,
             'suppress_original_embed': True,
+            'reaction_enabled': True,
             'reaction_emoji': '🙏'
         }
         
@@ -174,6 +175,8 @@ class InstagramEmbed(commands.Cog):
         if already_embedded:
             # Get reaction emoji from config
             config = await self.get_instagram_embed_config(message.guild.id)
+            if not config.get('reaction_enabled', True):
+                return
             reaction_emoji = config.get('reaction_emoji', '🙏')
             try:
                 await message.add_reaction(reaction_emoji)

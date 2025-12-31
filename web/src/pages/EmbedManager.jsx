@@ -30,6 +30,7 @@ export default function EmbedManager() {
     webhook_repost_enabled: false,
     pruning_enabled: true,
     pruning_max_days: 90,
+    reaction_enabled: true,
     reaction_emoji: '🙏'
   })
   
@@ -38,6 +39,7 @@ export default function EmbedManager() {
     webhook_repost_enabled: false,
     pruning_enabled: true,
     pruning_max_days: 90,
+    reaction_enabled: true,
     reaction_emoji: '🙏'
   })
   
@@ -78,6 +80,7 @@ export default function EmbedManager() {
           webhook_repost_enabled: false,
           pruning_enabled: true,
           pruning_max_days: 90,
+          reaction_enabled: true,
           reaction_emoji: '🙏'
         })
       } else {
@@ -99,6 +102,7 @@ export default function EmbedManager() {
           webhook_repost_enabled: false,
           pruning_enabled: true,
           pruning_max_days: 90,
+          reaction_enabled: true,
           reaction_emoji: '🙏'
         })
       } else {
@@ -402,6 +406,23 @@ export default function EmbedManager() {
                 Notify me when I reply to my own webhook post (testing)
               </label>
             </div>
+
+            {/* Reaction Enabled Toggle */}
+            <div className="flex items-center space-x-3">
+              <input
+                type="checkbox"
+                id="reaction-enabled"
+                checked={currentConfig.reaction_enabled ?? true}
+                onChange={e => activeTab === 'instagram'
+                  ? handleInstagramConfigChange('reaction_enabled', e.target.checked)
+                  : handleTwitterConfigChange('reaction_enabled', e.target.checked)
+                }
+                className="w-5 h-5 text-discord-blue bg-discord-bg border-gray-600 rounded focus:ring-discord-blue"
+              />
+              <label htmlFor="reaction-enabled" className="text-white">
+                React to already-embedded URLs
+              </label>
+            </div>
             
             {/* Reaction Emoji Picker */}
             <div>
@@ -420,9 +441,10 @@ export default function EmbedManager() {
                           ? handleInstagramConfigChange('reaction_emoji', emoji)
                           : handleTwitterConfigChange('reaction_emoji', emoji)
                         }
-                        className={`text-2xl p-2 rounded hover:bg-discord-bg-light transition ${
-                          currentConfig.reaction_emoji === emoji ? 'bg-discord-blue' : ''
-                        }`}
+                        disabled={!currentConfig.reaction_enabled}
+                        className={`text-2xl p-2 rounded transition ${
+                          currentConfig.reaction_emoji === emoji ? 'bg-discord-blue' : 'hover:bg-discord-bg-light'
+                        } ${!currentConfig.reaction_enabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         {emoji}
                       </button>

@@ -27,6 +27,7 @@ router.get("/:serverId", async (req, res) => {
         webhook_reply_notifications: true,
         notify_self_replies: false,
         suppress_original_embed: true,
+        reaction_enabled: true,
         reaction_emoji: "🙏",
       });
     }
@@ -53,6 +54,7 @@ router.put("/:serverId", isAuthenticated, async (req, res) => {
       webhook_reply_notifications,
       notify_self_replies,
       suppress_original_embed,
+      reaction_enabled = true,
       reaction_emoji,
     } = req.body;
     const existing = await db.query(
@@ -63,8 +65,8 @@ router.put("/:serverId", isAuthenticated, async (req, res) => {
     if (existing.rows.length > 0) {
       result = await db.query(
         `UPDATE twitter_embed_config
-         SET webhook_repost_enabled = $1, pruning_enabled = $2, pruning_max_days = $3, webhook_reply_notifications = $4, notify_self_replies = $5, suppress_original_embed = $6, reaction_emoji = $7, updated_at = NOW()
-         WHERE server_id = $8 RETURNING *`,
+         SET webhook_repost_enabled = $1, pruning_enabled = $2, pruning_max_days = $3, webhook_reply_notifications = $4, notify_self_replies = $5, suppress_original_embed = $6, reaction_enabled = $7, reaction_emoji = $8, updated_at = NOW()
+         WHERE server_id = $9 RETURNING *`,
         [
           webhook_repost_enabled,
           pruning_enabled,
@@ -72,14 +74,15 @@ router.put("/:serverId", isAuthenticated, async (req, res) => {
           webhook_reply_notifications,
           notify_self_replies,
           suppress_original_embed,
+          reaction_enabled,
           reaction_emoji || "🙏",
           req.params.serverId,
         ]
       );
     } else {
       result = await db.query(
-        `INSERT INTO twitter_embed_config (server_id, webhook_repost_enabled, pruning_enabled, pruning_max_days, webhook_reply_notifications, notify_self_replies, suppress_original_embed, reaction_emoji)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+        `INSERT INTO twitter_embed_config (server_id, webhook_repost_enabled, pruning_enabled, pruning_max_days, webhook_reply_notifications, notify_self_replies, suppress_original_embed, reaction_enabled, reaction_emoji)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
         [
           req.params.serverId,
           webhook_repost_enabled,
@@ -88,6 +91,7 @@ router.put("/:serverId", isAuthenticated, async (req, res) => {
           webhook_reply_notifications,
           notify_self_replies,
           suppress_original_embed,
+          reaction_enabled,
           reaction_emoji || "🙏",
         ]
       );
@@ -111,6 +115,7 @@ router.put("/:serverId", isAuthenticated, async (req, res) => {
             webhook_reply_notifications,
             notify_self_replies,
             suppress_original_embed,
+            reaction_enabled,
             reaction_emoji,
           }),
         ]
