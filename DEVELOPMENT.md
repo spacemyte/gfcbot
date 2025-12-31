@@ -8,7 +8,7 @@
 - Node.js 18+
 - Docker & Docker Compose
 - Discord Bot Token
-- Supabase account
+- PostgreSQL database (e.g., Railway)
 
 ### Initial Setup
 
@@ -31,11 +31,11 @@
    # Edit backend/.env with your credentials
    ```
 
-3. **Set up Supabase database**
+3. **Set up PostgreSQL database**
 
-   - Create a Supabase project
-   - Run migration files in SQL Editor (database/\*.sql)
-   - Get your Supabase URL and keys
+   - Provision a PostgreSQL instance (e.g., Railway)
+   - Run migration files in `database/*.sql` against your database
+   - Note your `DATABASE_URL`
 
 4. **Install dependencies**
 
@@ -110,7 +110,7 @@ gfcbot/
 │       ├── App.jsx
 │       ├── pages/         # Page components
 │       └── components/    # Reusable components
-└── database/              # Supabase migrations
+└── database/              # SQL migrations
     ├── 001_initial_schema.sql
     ├── 002_row_level_security.sql
     └── 003_functions_and_triggers.sql
@@ -128,7 +128,7 @@ gfcbot/
 
    - Test bot commands in Discord
    - Test API endpoints with the web dashboard
-   - Check database changes in Supabase
+   - Check database changes with `psql` or your provider's console
 
 3. **Commit and push**
 
@@ -187,7 +187,7 @@ Load in main.py:
 // backend/src/routes/your-feature.js
 const express = require("express");
 const router = express.Router();
-const { supabase } = require("../index");
+const { db } = require("../db");
 
 router.get("/:serverId", async (req, res) => {
   // Your logic
@@ -242,7 +242,7 @@ curl http://localhost:3001/api/features
 
 #### Database Testing
 
-- Use Supabase SQL Editor
+- Run migrations against your PostgreSQL instance
 - Check Row Level Security policies
 - Verify indices are working
 
@@ -256,7 +256,7 @@ curl http://localhost:3001/api/features
 
 **Database connection errors**
 
-- Verify Supabase URL and keys
+- Verify `DATABASE_URL`
 - Check if database is accessible
 - Review RLS policies
 
@@ -301,4 +301,4 @@ console.log("Debug:", variable);
 - [discord.py Documentation](https://discordpy.readthedocs.io/)
 - [Express.js Guide](https://expressjs.com/)
 - [React Documentation](https://react.dev/)
-- [Supabase Docs](https://supabase.com/docs)
+- [PostgreSQL Docs](https://www.postgresql.org/docs/)

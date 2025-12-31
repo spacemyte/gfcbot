@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { db } = require("../supabase");
+const { db } = require("../db");
 
 // Get all features
 router.get("/", async (req, res) => {

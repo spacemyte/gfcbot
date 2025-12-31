@@ -1,13 +1,8 @@
 require("dotenv").config();
 
 // Check required environment variables
-if (
-  !process.env.DATABASE_URL &&
-  (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY)
-) {
-  console.error(
-    "ERROR: DATABASE_URL or (SUPABASE_URL + SUPABASE_KEY) must be set!"
-  );
+if (!process.env.DATABASE_URL) {
+  console.error("ERROR: DATABASE_URL must be set!");
   process.exit(1);
 }
 
@@ -18,7 +13,7 @@ const session = require("express-session");
 const passport = require("passport");
 const DiscordStrategy = require("passport-discord").Strategy;
 const cron = require("node-cron");
-const { db } = require("./supabase");
+const { db } = require("./db");
 const PostgresSessionStore = require("./postgres-session-store");
 
 const app = express();
@@ -28,11 +23,7 @@ let botGuildCache = { ids: [], fetchedAt: 0 };
 const BOT_GUILD_CACHE_TTL_MS = 5 * 60 * 1000;
 
 // Log database configuration
-if (process.env.DATABASE_URL) {
-  console.log("✓ Using Railway PostgreSQL (DATABASE_URL)");
-} else {
-  console.log("✓ Using Supabase (SUPABASE_URL + SUPABASE_KEY)");
-}
+console.log("✓ Using PostgreSQL (DATABASE_URL)");
 
 // Middleware
 app.use(
@@ -207,8 +198,6 @@ app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
     database_url_set: !!process.env.DATABASE_URL,
-    supabase_url_set: !!process.env.SUPABASE_URL,
-    supabase_key_set: !!process.env.SUPABASE_KEY,
     node_env: process.env.NODE_ENV,
     timestamp: new Date().toISOString(),
   });
@@ -235,7 +224,6 @@ app.use("/api/bot-settings", isAuthenticated, botSettingsRouter);
 // Bot-accessible read-only endpoint for Instagram embed config (no auth required)
 app.get("/api/bot/instagram-embed-config/:serverId", async (req, res) => {
   try {
-    const { db } = require("./supabase");
     const result = await db.query(
       "SELECT * FROM instagram_embed_config WHERE server_id = $1",
       [req.params.serverId]
@@ -258,7 +246,6 @@ app.get("/api/bot/instagram-embed-config/:serverId", async (req, res) => {
 // Bot-accessible read-only endpoint for Twitter embed config (no auth required)
 app.get("/api/bot/twitter-embed-config/:serverId", async (req, res) => {
   try {
-    const { db } = require("./supabase");
     const result = await db.query(
       "SELECT * FROM twitter_embed_config WHERE server_id = $1",
       [req.params.serverId]
@@ -314,10 +301,10 @@ cron.schedule("0 2 * * *", async () => {
         );
       }
 
-      // Delete old audit logs
+      // Soft delete old audit logs (retain for history)
       try {
         await db.query(
-          "DELETE FROM audit_logs WHERE server_id = $1 AND created_at < $2",
+          "UPDATE audit_logs SET deleted_at = NOW() WHERE server_id = $1 AND created_at < $2 AND deleted_at IS NULL",
           [config.server_id, cutoffDate.toISOString()]
         );
       } catch (auditError) {

@@ -1,5 +1,5 @@
 const session = require("express-session");
-const { db } = require("./supabase");
+const { db } = require("./db");
 
 class PostgresSessionStore extends session.Store {
   constructor(options = {}) {

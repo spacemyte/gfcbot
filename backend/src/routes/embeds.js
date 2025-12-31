@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { db } = require("../supabase");
+const { db } = require("../db");
 
 // Get embed configs for a server (optionally filter by featureId)
 router.get("/:serverId", async (req, res) => {

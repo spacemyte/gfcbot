@@ -12,9 +12,8 @@ DISCORD_CLIENT_ID=your_discord_client_id
 DISCORD_CLIENT_SECRET=your_discord_client_secret
 DISCORD_CALLBACK_URL=https://your-backend-service.up.railway.app/auth/discord/callback
 
-# Supabase
-SUPABASE_URL=https://your-project-ref.supabase.co
-SUPABASE_KEY=your_supabase_service_role_key
+# Database
+DATABASE_URL=postgresql://USER:PASSWORD@HOST:PORT/DBNAME
 
 # Session & CORS
 SESSION_SECRET=your_32_char_random_string

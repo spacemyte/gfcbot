@@ -25,7 +25,7 @@ gfcbot/
 ├── bot/                 # Python Discord bot (discord.py)
 ├── backend/             # Node.js/Express API server
 ├── web/                 # React web dashboard
-├── database/            # Supabase migration files
+├── database/            # Database migration files
 └── docker-compose.yml   # Local development setup
 ```
 
@@ -37,7 +37,7 @@ gfcbot/
 - Node.js 18+
 - Docker & Docker Compose (for local development)
 - Discord Bot Token
-- Supabase account
+- PostgreSQL database (e.g., Railway)
 
 ### Local Development
 
@@ -53,11 +53,11 @@ cd gfcbot
 ```bash
 # Bot
 cp bot/.env.example bot/.env
-# Edit bot/.env with your Discord token and Supabase credentials
+# Edit bot/.env with your Discord token and database connection URL
 
 # Backend
 cp backend/.env.example backend/.env
-# Edit backend/.env with your Discord OAuth and Supabase credentials
+# Edit backend/.env with your Discord OAuth credentials and DATABASE_URL
 ```
 
 3. Run with Docker Compose:

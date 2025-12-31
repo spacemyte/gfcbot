@@ -17,7 +17,7 @@ GFC Bot is a modular Discord bot with web-based management dashboard designed fo
 
 - **Express** - Web server framework
 - **Passport Discord** - OAuth authentication
-- **Supabase JS** - Database client
+- **pg** - PostgreSQL client
 - **node-cron** - Scheduled task management
 
 ### Frontend (React)
@@ -30,7 +30,7 @@ GFC Bot is a modular Discord bot with web-based management dashboard designed fo
 
 ### Database
 
-- **Supabase (PostgreSQL)** - Data storage with Row Level Security
+- **PostgreSQL** - Data storage
 
 ### Deployment
 
@@ -121,7 +121,7 @@ gfcbot/
 │           ├── AuditLogs.jsx    # Audit viewer
 │           └── Settings.jsx     # Server settings
 │
-├── database/                     # Supabase migrations
+├── database/                     # Database migrations
 │   ├── 001_initial_schema.sql   # Core tables
 │   ├── 002_row_level_security.sql # RLS policies
 │   ├── 003_functions_and_triggers.sql # DB functions
@@ -205,7 +205,7 @@ gfcbot/
 ## Quick Start
 
 1. **Clone repository**
-2. **Set up Supabase** (run migrations)
+2. **Set up PostgreSQL** (run migrations)
 3. **Configure environment variables**
 4. **Deploy to Railway**
 5. **Invite bot to Discord**
@@ -223,7 +223,6 @@ See `DEPLOYMENT.md` for detailed instructions.
 ## Cost Breakdown
 
 - Railway: ~$5/month (bot + backend)
-- Supabase: Free tier (sufficient for small servers)
 - Vercel: Free tier (frontend)
 - **Total: ~$5/month**
 

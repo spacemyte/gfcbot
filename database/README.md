@@ -1,6 +1,6 @@
 # GFC Bot Database Schema
 
-This directory contains Supabase migration files for the GFC Bot database.
+This directory contains SQL migration files for the GFC Bot database.
 
 ## Migration Files
 
@@ -21,24 +21,15 @@ This directory contains Supabase migration files for the GFC Bot database.
 
 ## Running Migrations
 
-### Using Supabase Dashboard
-
-1. Go to your Supabase project
-2. Navigate to SQL Editor
-3. Run each migration file in order (001, 002, 003)
-
-### Using Supabase CLI
+### Using psql (Railway/PostgreSQL)
 
 ```bash
-# Install Supabase CLI
-npm install -g supabase
-
-# Link to your project
-supabase link --project-ref your-project-ref
-
-# Run migrations
-supabase db push
+psql "$DATABASE_URL" -f database/001_initial_schema.sql
+psql "$DATABASE_URL" -f database/002_row_level_security.sql
+psql "$DATABASE_URL" -f database/003_functions_and_triggers.sql
 ```
+
+Or use your provider's SQL console to execute the files in order.
 
 ## Schema Overview
 

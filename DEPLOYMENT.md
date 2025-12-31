@@ -1,26 +1,27 @@
 # GFC Bot Deployment Guide
 
-This guide covers deploying GFC Bot to Railway with Supabase database.
+This guide covers deploying GFC Bot to Railway with PostgreSQL.
 
 ## Prerequisites
 
 - GitHub account with the gfcbot repository
 - Railway account (https://railway.app)
-- Supabase account (https://supabase.com)
+- PostgreSQL host (e.g., Railway Postgres)
 - Discord Bot Token and OAuth credentials
 
-## Step 1: Set Up Supabase Database
+## Step 1: Set Up PostgreSQL
 
-1. Create a new Supabase project at https://supabase.com
-2. Go to SQL Editor in your Supabase dashboard
-3. Run the migration files in order:
+1. Provision a PostgreSQL instance (Railway recommended)
+2. Run the migration files in order:
    - `database/001_initial_schema.sql`
    - `database/002_row_level_security.sql`
    - `database/003_functions_and_triggers.sql`
-4. Get your connection details:
-   - Project URL: `https://your-project-ref.supabase.co`
-   - Anon/Public Key: Found in Settings → API
-   - Service Role Key: Found in Settings → API (keep this secret!)
+3. Ensure the `uuid-ossp` extension is enabled:
+   ```sql
+   CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+   ```
+4. Note your connection string (DATABASE_URL):
+   - Format: `postgresql://USER:PASSWORD@HOST:PORT/DBNAME`
 
 ## Step 2: Create Discord Application
 
@@ -73,8 +74,7 @@ The Discord callback URL is where Discord redirects users after they log in. Her
    ```
    DISCORD_TOKEN=your_bot_token
    DISCORD_CLIENT_ID=your_client_id
-   SUPABASE_URL=https://your-project-ref.supabase.co
-   SUPABASE_KEY=your_supabase_service_role_key
+   DATABASE_URL=postgresql://USER:PASSWORD@HOST:PORT/DBNAME
    ENVIRONMENT=production
    ENABLE_PERMISSION_CACHE=true
    COMMAND_PREFIX=!
@@ -93,8 +93,7 @@ The Discord callback URL is where Discord redirects users after they log in. Her
    DISCORD_CLIENT_ID=your_client_id
    DISCORD_CLIENT_SECRET=your_client_secret
    DISCORD_CALLBACK_URL=https://your-backend-url.up.railway.app/auth/discord/callback
-   SUPABASE_URL=https://your-project-ref.supabase.co
-   SUPABASE_KEY=your_supabase_service_role_key
+   DATABASE_URL=postgresql://USER:PASSWORD@HOST:PORT/DBNAME
    SESSION_SECRET=generate_a_random_string_here
    FRONTEND_URL=https://your-frontend-url.vercel.app
    ```
@@ -175,7 +174,7 @@ The `.github/workflows/deploy.yml` file is already configured. To enable:
 ## Monitoring
 
 - Railway Dashboard: Monitor service health, logs, and metrics
-- Supabase Dashboard: View database queries and performance
+- PostgreSQL: View queries and performance via your provider
 - Discord: Bot should show as online in your server
 
 ## Troubleshooting
@@ -184,7 +183,7 @@ The `.github/workflows/deploy.yml` file is already configured. To enable:
 
 - Check Railway logs for errors
 - Verify all environment variables are set correctly
-- Ensure Supabase is accessible
+- Ensure PostgreSQL is accessible
 
 ### OAuth login fails
 
@@ -201,7 +200,6 @@ The `.github/workflows/deploy.yml` file is already configured. To enable:
 ## Cost Estimate
 
 - Railway: ~$5/month (after free trial)
-- Supabase: Free tier (sufficient for small servers)
 - Vercel: Free tier (sufficient for dashboard)
 - **Total: ~$5/month**
 
@@ -236,8 +234,7 @@ NODE_ENV=production
 DISCORD_CLIENT_ID=your_client_id
 DISCORD_CLIENT_SECRET=your_client_secret
 DISCORD_CALLBACK_URL=https://your-backend-domain.up.railway.app/auth/discord/callback
-SUPABASE_URL=your_supabase_url
-SUPABASE_KEY=your_supabase_service_role_key
+DATABASE_URL=postgresql://USER:PASSWORD@HOST:PORT/DBNAME
 SESSION_SECRET=your_session_secret_here
 FRONTEND_URL=https://your-web-domain-here
 ```
@@ -267,8 +264,7 @@ VITE_API_URL=https://your-backend-domain.up.railway.app
 ```
 DISCORD_TOKEN=your_bot_token
 DISCORD_CLIENT_ID=your_client_id
-SUPABASE_URL=your_supabase_url
-SUPABASE_KEY=your_supabase_service_role_key
+DATABASE_URL=postgresql://USER:PASSWORD@HOST:PORT/DBNAME
 ENVIRONMENT=production
 ENABLE_PERMISSION_CACHE=true
 COMMAND_PREFIX=!
@@ -282,5 +278,5 @@ COMMAND_PREFIX=!
 For issues, check:
 
 - Railway logs: Railway Dashboard → Service → Logs
-- Supabase logs: Supabase Dashboard → Logs
+- PostgreSQL logs: via your database provider
 - GitHub Issues: https://github.com/spacemyte/gfcbot/issues

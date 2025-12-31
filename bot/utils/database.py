@@ -44,7 +44,7 @@ class Database:
         Initialize database connection.
         
         Args:
-            database_url: PostgreSQL connection string (from Supabase)
+            database_url: PostgreSQL connection string
         """
         if not database_url:
             raise ValueError("DATABASE_URL environment variable is not set!")

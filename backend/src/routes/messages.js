@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { db } = require("../supabase");
+const { db } = require("../db");
 
 // Get message data for a server with filters
 router.get("/:serverId", async (req, res) => {
