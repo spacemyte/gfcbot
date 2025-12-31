@@ -73,24 +73,6 @@ export default function AuditLogs() {
     }
   }
 
-  const handleClearAll = async () => {
-    if (!confirm('⚠️ WARNING: This will delete ALL audit logs for this server. Are you absolutely sure?')) {
-      return
-    }
-    if (!confirm('This action CANNOT be undone. Proceed with clearing all audit logs?')) {
-      return
-    }
-
-    try {
-      await axios.delete(`${API_URL}/api/audit-logs/${serverId}`)
-      setPage(0)
-      fetchLogs() // Refresh the list
-    } catch (error) {
-      console.error('Error clearing audit logs:', error)
-      alert('Failed to clear audit logs')
-    }
-  }
-
   if (loading) {
     return <div className="text-white">Loading...</div>
   }
@@ -105,13 +87,6 @@ export default function AuditLogs() {
           <p className="mt-2 text-gray-400">Track all changes and actions in your server</p>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={handleClearAll}
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition flex items-center gap-2"
-            disabled={logs.length === 0}
-          >
-            <span>🗑️</span> Clear All
-          </button>
           <button
             onClick={() => {
               setPage(0)
