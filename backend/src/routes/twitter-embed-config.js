@@ -127,6 +127,8 @@ router.put("/:serverId", isAuthenticated, async (req, res) => {
             suppress_original_embed,
             reaction_enabled,
             reaction_emoji,
+            silence_restricted_warning,
+            restricted_warning_message,
           }),
         ]
       );
@@ -137,7 +139,10 @@ router.put("/:serverId", isAuthenticated, async (req, res) => {
     res.json(result.rows[0]);
   } catch (error) {
     console.error("Error updating twitter embed config:", error);
-    res.status(500).json({ error: "Failed to update config" });
+    console.error("Error details:", error.message, error.stack);
+    res
+      .status(500)
+      .json({ error: "Failed to update config", details: error.message });
   }
 });
 
