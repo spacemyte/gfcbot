@@ -349,36 +349,6 @@ export default function EmbedManager() {
             <div className="flex items-center space-x-3">
               <input
                 type="checkbox"
-                id="suppress-original-embed"
-                checked={currentConfig.suppress_original_embed ?? true}
-                onChange={e => activeTab === 'instagram'
-                  ? handleInstagramConfigChange('suppress_original_embed', e.target.checked)
-                  : handleTwitterConfigChange('suppress_original_embed', e.target.checked)
-                }
-                className="w-5 h-5 text-discord-blue bg-discord-bg border-gray-600 rounded focus:ring-discord-blue"
-              />
-              <label htmlFor="suppress-original-embed" className="text-white">
-                Suppress original message embed preview
-              </label>
-            </div>
-            <div className="flex items-center space-x-3">
-              <input
-                type="checkbox"
-                id="pruning-enabled"
-                checked={currentConfig.pruning_enabled}
-                onChange={e => activeTab === 'instagram'
-                  ? handleInstagramConfigChange('pruning_enabled', e.target.checked)
-                  : handleTwitterConfigChange('pruning_enabled', e.target.checked)
-                }
-                className="w-5 h-5 text-discord-blue bg-discord-bg border-gray-600 rounded focus:ring-discord-blue"
-              />
-              <label htmlFor="pruning-enabled" className="text-white">
-                Enable automatic data pruning
-              </label>
-            </div>
-            <div className="flex items-center space-x-3">
-              <input
-                type="checkbox"
                 id="webhook-reply-notifications"
                 checked={currentConfig.webhook_reply_notifications}
                 onChange={e => activeTab === 'instagram'
@@ -389,6 +359,21 @@ export default function EmbedManager() {
               />
               <label htmlFor="webhook-reply-notifications" className="text-white">
                 Notify original user when someone replies to their bot webhook message
+              </label>
+            </div>
+            <div className="flex items-center space-x-3">
+              <input
+                type="checkbox"
+                id="suppress-original-embed"
+                checked={currentConfig.suppress_original_embed ?? true}
+                onChange={e => activeTab === 'instagram'
+                  ? handleInstagramConfigChange('suppress_original_embed', e.target.checked)
+                  : handleTwitterConfigChange('suppress_original_embed', e.target.checked)
+                }
+                className="w-5 h-5 text-discord-blue bg-discord-bg border-gray-600 rounded focus:ring-discord-blue"
+              />
+              <label htmlFor="suppress-original-embed" className="text-white">
+                Suppress original message embed preview
               </label>
             </div>
 
@@ -442,27 +427,45 @@ export default function EmbedManager() {
               </div>
             </div>
             
-            {currentConfig.pruning_enabled && (
-              <div>
-                <label className="block text-gray-300 mb-2">
-                  Maximum retention period (days)
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="90"
-                  value={currentConfig.pruning_max_days}
-                  onChange={e => activeTab === 'instagram'
-                    ? handleInstagramConfigChange('pruning_max_days', parseInt(e.target.value))
-                    : handleTwitterConfigChange('pruning_max_days', parseInt(e.target.value))
-                  }
-                  className="w-full px-3 py-2 bg-discord-bg text-white rounded focus:outline-none focus:ring-2 focus:ring-discord-blue"
-                />
-                <p className="mt-2 text-sm text-gray-400">
-                  Data older than {currentConfig.pruning_max_days} days will be automatically deleted. Maximum: 90 days.
-                </p>
-              </div>
-            )}
+            <div className="flex items-center space-x-3">
+              <input
+                type="checkbox"
+                id="pruning-enabled"
+                checked={currentConfig.pruning_enabled}
+                onChange={e => activeTab === 'instagram'
+                  ? handleInstagramConfigChange('pruning_enabled', e.target.checked)
+                  : handleTwitterConfigChange('pruning_enabled', e.target.checked)
+                }
+                className="w-5 h-5 text-discord-blue bg-discord-bg border-gray-600 rounded focus:ring-discord-blue"
+              />
+              <label htmlFor="pruning-enabled" className="text-white">
+                Enable automatic data pruning
+              </label>
+            </div>
+            
+            <div>
+              <label className="block text-gray-300 mb-2">
+                Maximum retention period (days)
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="90"
+                value={currentConfig.pruning_max_days}
+                onChange={e => activeTab === 'instagram'
+                  ? handleInstagramConfigChange('pruning_max_days', parseInt(e.target.value))
+                  : handleTwitterConfigChange('pruning_max_days', parseInt(e.target.value))
+                }
+                disabled={!currentConfig.pruning_enabled}
+                className={`w-full px-3 py-2 bg-discord-bg text-white rounded focus:outline-none focus:ring-2 focus:ring-discord-blue ${
+                  !currentConfig.pruning_enabled ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              />
+              <p className="mt-2 text-sm text-gray-400">
+                Data older than {currentConfig.pruning_max_days} days will be automatically deleted. Maximum: 90 days.
+              </p>
+            </div>
+            
             <div className="flex items-center space-x-4">
               <button
                 type="submit"
