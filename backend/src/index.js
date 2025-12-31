@@ -38,12 +38,14 @@ app.use(
     store: new PostgresSessionStore(),
     secret: process.env.SESSION_SECRET || "gfcbot-secret",
     resave: false,
-    saveUninitialized: false,
+    saveUninitialized: true,
     cookie: {
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      sameSite: "none",
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      domain:
+        process.env.NODE_ENV === "production" ? ".up.railway.app" : undefined,
     },
     proxy: true,
   })
@@ -159,8 +161,10 @@ app.get("/auth/logout", (req, res, next) => {
       if (destroyErr) return next(destroyErr);
       res.clearCookie("connect.sid", {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        secure: true,
+        sameSite: "none",
+        domain:
+          process.env.NODE_ENV === "production" ? ".up.railway.app" : undefined,
       });
       res.json({ success: true });
     });

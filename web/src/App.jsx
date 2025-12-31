@@ -20,6 +20,9 @@ function App() {
 
   useEffect(() => {
     checkAuth()
+    // Check auth again after 1 second in case of slow redirect/session setup
+    const timer = setTimeout(checkAuth, 1000)
+    return () => clearTimeout(timer)
   }, [])
 
   const checkAuth = async () => {
