@@ -162,8 +162,11 @@ class InstagramEmbed(commands.Cog):
                 embed_type = embed_config.get('embed_type', 'prefix')
                 
                 if embed_type == 'replacement':
-                    # For replacement mode, check if the URL contains the replacement domain
-                    if prefix.lower() in original_url.lower():
+                    # For replacement mode, check if URL uses the replacement domain
+                    # e.g., if prefix is 'ddinstagram.com', check for 'ddinstagram.com/' or 'ddinstagram.com?' in URL
+                    normalized_url = original_url.lower()
+                    normalized_prefix = prefix.lower()
+                    if f'{normalized_prefix}/' in normalized_url or f'{normalized_prefix}?' in normalized_url:
                         already_embedded = True
                         break
                 else:
@@ -173,7 +176,9 @@ class InstagramEmbed(commands.Cog):
                         break
         
         if already_embedded:
-            # Get reaction emoji from config
+            # URL already uses configured embed - react and skip processing
+            # NOTE: Already-embedded URLs are NOT added to message_data (URL history)
+            # They only get an audit log entry for tracking purposes
             config = await self.get_instagram_embed_config(message.guild.id)
             if not config.get('reaction_enabled', True):
                 return
