@@ -388,22 +388,7 @@ export default function EmbedManager() {
                 className="w-5 h-5 text-discord-blue bg-discord-bg border-gray-600 rounded focus:ring-discord-blue"
               />
               <label htmlFor="webhook-reply-notifications" className="text-white">
-                Enable webhook reply notifications
-              </label>
-            </div>
-            <div className="flex items-center space-x-3">
-              <input
-                type="checkbox"
-                id="notify-self-replies"
-                checked={currentConfig.notify_self_replies}
-                onChange={e => activeTab === 'instagram'
-                  ? handleInstagramConfigChange('notify_self_replies', e.target.checked)
-                  : handleTwitterConfigChange('notify_self_replies', e.target.checked)
-                }
-                className="w-5 h-5 text-discord-blue bg-discord-bg border-gray-600 rounded focus:ring-discord-blue"
-              />
-              <label htmlFor="notify-self-replies" className="text-white">
-                Notify me when I reply to my own webhook post (testing)
+                Notify original user when someone replies to their bot webhook message
               </label>
             </div>
 

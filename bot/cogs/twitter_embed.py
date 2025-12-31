@@ -235,16 +235,15 @@ class TwitterEmbed(commands.Cog):
         # Get the server config to check webhook reply notification settings
         config = await self.get_twitter_embed_config(message.guild.id)
         webhook_notifications_enabled = config.get('webhook_reply_notifications', True)
-        notify_self = config.get('notify_self_replies', False)
         
         # Skip if webhook reply notifications are disabled overall
         if not webhook_notifications_enabled:
             logger.info(f'Webhook reply notifications disabled for guild {message.guild.id}, skipping')
             return
         
-        # Don't notify if replying to their own message (unless notify_self_replies is enabled)
-        if message.author.id == original_user_id and not notify_self:
-            logger.info(f'User {message.author.id} replied to their own webhook message, skipping notification (notify_self_replies={notify_self})')
+        # Don't notify if replying to their own message (always skip self-replies)
+        if message.author.id == original_user_id:
+            logger.info(f'User {message.author.id} replied to their own webhook message, skipping notification')
             return
         
         try:
