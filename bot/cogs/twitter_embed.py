@@ -329,15 +329,9 @@ class TwitterEmbed(commands.Cog):
             logger.warning('Message has no guild (DM or system message); skipping embed config.')
             return
         
-        # Check if the content is age-restricted
-        if await self._is_age_restricted(original_url):
-            logger.info(f'URL {original_url} is age-restricted, skipping embed')
-            config = await self.get_twitter_embed_config(guild.id)
-            # Only send warning if not silenced
-            if not config.get('silence_restricted_warning', False):
-                warning_msg = config.get('restricted_warning_message', 'Cannot embed restricted content, please login to the original URL to view')
-                await self._handle_failure(message, original_url, warning_msg)
-            return
+        # Note: Skipping age-restricted content check for Twitter/X as scraper services frequently
+        # misidentify posts as restricted when they're actually accessible via the embed services
+        
         config = await self.get_twitter_embed_config(guild.id)
         webhook_mode = config.get('webhook_repost_enabled', False)
         logger.info(f'Twitter embed config for guild {guild.id}: webhook_repost_enabled={webhook_mode}')
