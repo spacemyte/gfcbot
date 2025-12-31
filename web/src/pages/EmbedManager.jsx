@@ -31,7 +31,9 @@ export default function EmbedManager() {
     pruning_enabled: true,
     pruning_max_days: 90,
     reaction_enabled: true,
-    reaction_emoji: '🙏'
+    reaction_emoji: '🙏',
+    silence_restricted_warning: false,
+    restricted_warning_message: 'Cannot embed restricted content, please login to the original URL to view'
   })
   
   // Twitter embed config state
@@ -40,7 +42,9 @@ export default function EmbedManager() {
     pruning_enabled: true,
     pruning_max_days: 90,
     reaction_enabled: true,
-    reaction_emoji: '🙏'
+    reaction_emoji: '🙏',
+    silence_restricted_warning: false,
+    restricted_warning_message: 'Cannot embed restricted content, please login to the original URL to view'
   })
   
   const [configLoading, setConfigLoading] = useState(true)
@@ -331,6 +335,50 @@ export default function EmbedManager() {
           <div className="text-white">Loading settings...</div>
         ) : (
           <form onSubmit={handleConfigSave} className="space-y-4">
+            {/* Restricted Content Warning Settings - At Top */}
+            <div className="border-b border-gray-700 pb-4 mb-4">
+              <h3 className="text-lg font-semibold text-white mb-4">Restricted Content Warning</h3>
+              
+              <div className="flex items-center space-x-3 mb-4">
+                <input
+                  type="checkbox"
+                  id="silence-restricted-warning"
+                  checked={currentConfig.silence_restricted_warning}
+                  onChange={e => activeTab === 'instagram' 
+                    ? handleInstagramConfigChange('silence_restricted_warning', e.target.checked)
+                    : handleTwitterConfigChange('silence_restricted_warning', e.target.checked)
+                  }
+                  className="w-5 h-5 text-discord-blue bg-discord-bg border-gray-600 rounded focus:ring-discord-blue"
+                />
+                <label htmlFor="silence-restricted-warning" className="text-white">
+                  Silence restricted content warning
+                </label>
+              </div>
+
+              <div className="mb-2">
+                <label htmlFor="restricted-warning-message" className="block text-white text-sm font-semibold mb-2">
+                  Warning message:
+                </label>
+                <textarea
+                  id="restricted-warning-message"
+                  value={currentConfig.restricted_warning_message}
+                  onChange={e => activeTab === 'instagram'
+                    ? handleInstagramConfigChange('restricted_warning_message', e.target.value)
+                    : handleTwitterConfigChange('restricted_warning_message', e.target.value)
+                  }
+                  disabled={currentConfig.silence_restricted_warning}
+                  maxLength="255"
+                  className={`w-full px-3 py-2 bg-discord-bg border border-gray-600 rounded text-white text-sm resize-none ${
+                    currentConfig.silence_restricted_warning ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                  rows="3"
+                />
+                <div className="text-gray-400 text-xs mt-1">
+                  {currentConfig.restricted_warning_message.length}/255 characters
+                </div>
+              </div>
+            </div>
+
             <div className="flex items-center space-x-3">
               <input
                 type="checkbox"

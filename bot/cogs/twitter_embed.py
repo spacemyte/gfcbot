@@ -332,7 +332,11 @@ class TwitterEmbed(commands.Cog):
         # Check if the content is age-restricted
         if await self._is_age_restricted(original_url):
             logger.info(f'URL {original_url} is age-restricted, skipping embed')
-            await self._handle_failure(message, original_url, 'Cannot embed restricted content, please login to the original URL to view')
+            config = await self.get_twitter_embed_config(guild.id)
+            # Only send warning if not silenced
+            if not config.get('silence_restricted_warning', False):
+                warning_msg = config.get('restricted_warning_message', 'Cannot embed restricted content, please login to the original URL to view')
+                await self._handle_failure(message, original_url, warning_msg)
             return
         config = await self.get_twitter_embed_config(guild.id)
         webhook_mode = config.get('webhook_repost_enabled', False)
@@ -557,17 +561,6 @@ class TwitterEmbed(commands.Cog):
             except Exception as e:
                 logger.debug(f'Error accessing scraper service for {url}: {e}')
                 continue
-        
-        return False
-                            if marker.lower() in text.lower():
-                                logger.info(f'Age-restricted content detected in URL: {url}')
-                                return True
-                    except Exception as e:
-                        logger.warning(f'Error checking age-restriction for {url}: {e}')
-                        return False
-        except Exception as e:
-            logger.warning(f'Error validating age-restriction for {url}: {e}')
-            return False
         
         return False
     

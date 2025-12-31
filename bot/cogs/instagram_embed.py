@@ -331,7 +331,11 @@ class InstagramEmbed(commands.Cog):
         # Check if the content is age-restricted
         if await self._is_age_restricted(original_url):
             logger.info(f'URL {original_url} is age-restricted, skipping embed')
-            await self._handle_failure(message, original_url, 'Cannot embed restricted content, please login to the original URL to view')
+            config = await self.get_instagram_embed_config(guild.id)
+            # Only send warning if not silenced
+            if not config.get('silence_restricted_warning', False):
+                warning_msg = config.get('restricted_warning_message', 'Cannot embed restricted content, please login to the original URL to view')
+                await self._handle_failure(message, original_url, warning_msg)
             return
         
         config = await self.get_instagram_embed_config(guild.id)
