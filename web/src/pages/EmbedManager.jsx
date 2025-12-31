@@ -5,6 +5,13 @@ import axios from 'axios'
 
 const API_URL = import.meta.env.VITE_API_URL || ''
 
+// Common Discord reaction emojis
+const COMMON_EMOJIS = [
+  '👍', '👎', '❤️', '😂', '😮', '😢', '😡', '🔥',
+  '👀', '💯', '✅', '❌', '⭐', '🎉', '🙏', '💪',
+  '🤝', '✨', '💚', '💙', '💜', '🧡', '🤍', '🤎'
+]
+
 export default function EmbedManager() {
   const { serverId } = useParams()
   const [instagramEmbeds, setInstagramEmbeds] = useState([])
@@ -22,14 +29,16 @@ export default function EmbedManager() {
   const [instagramConfig, setInstagramConfig] = useState({
     webhook_repost_enabled: false,
     pruning_enabled: true,
-    pruning_max_days: 90
+    pruning_max_days: 90,
+    reaction_emoji: '🙏'
   })
   
   // Twitter embed config state
   const [twitterConfig, setTwitterConfig] = useState({
     webhook_repost_enabled: false,
     pruning_enabled: true,
-    pruning_max_days: 90
+    pruning_max_days: 90,
+    reaction_emoji: '🙏'
   })
   
   const [configLoading, setConfigLoading] = useState(true)
@@ -68,7 +77,8 @@ export default function EmbedManager() {
         setInstagramConfig({
           webhook_repost_enabled: false,
           pruning_enabled: true,
-          pruning_max_days: 90
+          pruning_max_days: 90,
+          reaction_emoji: '🙏'
         })
       } else {
         console.error('Error fetching Instagram embed config:', error)
@@ -88,7 +98,8 @@ export default function EmbedManager() {
         setTwitterConfig({
           webhook_repost_enabled: false,
           pruning_enabled: true,
-          pruning_max_days: 90
+          pruning_max_days: 90,
+          reaction_emoji: '🙏'
         })
       } else {
         console.error('Error fetching Twitter embed config:', error)
@@ -391,6 +402,39 @@ export default function EmbedManager() {
                 Notify me when I reply to my own webhook post (testing)
               </label>
             </div>
+            
+            {/* Reaction Emoji Picker */}
+            <div>
+              <label className="block text-gray-300 mb-2">
+                Reaction Emoji (for already-embedded URLs)
+              </label>
+              <div className="flex items-center space-x-3">
+                <div className="text-4xl">{currentConfig.reaction_emoji || '🙏'}</div>
+                <div className="flex-1">
+                  <div className="grid grid-cols-8 gap-2 p-3 bg-discord-bg rounded">
+                    {COMMON_EMOJIS.map(emoji => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => activeTab === 'instagram'
+                          ? handleInstagramConfigChange('reaction_emoji', emoji)
+                          : handleTwitterConfigChange('reaction_emoji', emoji)
+                        }
+                        className={`text-2xl p-2 rounded hover:bg-discord-bg-light transition ${
+                          currentConfig.reaction_emoji === emoji ? 'bg-discord-blue' : ''
+                        }`}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-2 text-sm text-gray-400">
+                    Choose which emoji the bot reacts with when a user posts an already-embedded URL
+                  </p>
+                </div>
+              </div>
+            </div>
+            
             {currentConfig.pruning_enabled && (
               <div>
                 <label className="block text-gray-300 mb-2">

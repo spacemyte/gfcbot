@@ -55,7 +55,8 @@ class TwitterEmbed(commands.Cog):
             'pruning_max_days': 90,
             'webhook_reply_notifications': True,
             'notify_self_replies': False,
-            'suppress_original_embed': True
+            'suppress_original_embed': True,
+            'reaction_emoji': '🙏'
         }
         
     async def cog_load(self):
@@ -172,9 +173,12 @@ class TwitterEmbed(commands.Cog):
                         break
         
         if already_embedded:
+            # Get reaction emoji from config
+            config = await self.get_twitter_embed_config(message.guild.id)
+            reaction_emoji = config.get('reaction_emoji', '🙏')
             try:
-                await message.add_reaction('👍')
-                logger.info(f'Reacted with thumbs up to already-embedded URL: {original_url}')
+                await message.add_reaction(reaction_emoji)
+                logger.info(f'Reacted with {reaction_emoji} to already-embedded URL: {original_url}')
                 # Log audit: already embedded
                 await self.bot.db.insert_audit_log(
                     server_id=message.guild.id,
