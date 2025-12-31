@@ -327,6 +327,13 @@ class InstagramEmbed(commands.Cog):
         if not guild:
             logger.warning('Message has no guild (DM or system message); skipping embed config.')
             return
+        
+        # Check if the content is age-restricted
+        if await self._is_age_restricted(original_url):
+            logger.info(f'URL {original_url} is age-restricted, skipping embed')
+            await self._handle_failure(message, original_url, 'Age Restricted Content, cannot embed')
+            return
+        
         config = await self.get_instagram_embed_config(guild.id)
         webhook_mode = config.get('webhook_repost_enabled', False)
         logger.info(f'Instagram embed config for guild {guild.id}: webhook_repost_enabled={webhook_mode}')
@@ -577,6 +584,46 @@ class InstagramEmbed(commands.Cog):
             return False, f'Client error: {str(e)}'
         except Exception as e:
             return False, f'Unexpected error: {str(e)}'
+    
+    async def _is_age_restricted(self, url: str, timeout: int = 5) -> bool:
+        """
+        Check if an Instagram URL is age-restricted by making a request
+        and checking for age-gate markers in the response.
+        
+        Args:
+            url: Instagram URL to check
+            timeout: Timeout in seconds
+            
+        Returns:
+            True if age-restricted, False otherwise
+        """
+        if not self.session:
+            return False
+        
+        try:
+            async with self.session.get(url, timeout=timeout, allow_redirects=True) as response:
+                if response.status == 200:
+                    try:
+                        text = await response.text()
+                        # Check for common age-gate patterns in Instagram HTML
+                        age_gate_markers = [
+                            'instagram_www",{"is_age_gated":true',
+                            'age_gated":true',
+                            'nativebookmark',
+                            '{"is_age_gated":true'
+                        ]
+                        for marker in age_gate_markers:
+                            if marker in text:
+                                logger.info(f'Age-restricted content detected in URL: {url}')
+                                return True
+                    except Exception as e:
+                        logger.warning(f'Error checking age-restriction for {url}: {e}')
+                        return False
+        except Exception as e:
+            logger.warning(f'Error validating age-restriction for {url}: {e}')
+            return False
+        
+        return False
     
     async def _handle_failure(
         self,
