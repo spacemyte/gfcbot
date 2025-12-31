@@ -587,8 +587,8 @@ class InstagramEmbed(commands.Cog):
     
     async def _is_age_restricted(self, url: str, timeout: int = 5) -> bool:
         """
-        Check if an Instagram URL is age-restricted by making a request
-        and checking for age-gate markers in the response.
+        Check if an Instagram URL is age-restricted by attempting to fetch
+        the content and checking for access restrictions.
         
         Args:
             url: Instagram URL to check
@@ -601,19 +601,30 @@ class InstagramEmbed(commands.Cog):
             return False
         
         try:
-            async with self.session.get(url, timeout=timeout, allow_redirects=True) as response:
+            # Try to access the URL and check for restriction indicators
+            async with self.session.get(url, timeout=timeout, allow_redirects=True, ssl=False) as response:
+                # 403 Forbidden often indicates age-restricted content
+                if response.status == 403:
+                    logger.info(f'Age-restricted content detected (403 Forbidden): {url}')
+                    return True
+                
                 if response.status == 200:
                     try:
                         text = await response.text()
-                        # Check for common age-gate patterns in Instagram HTML
+                        # Check for age-restriction indicators in the response
                         age_gate_markers = [
-                            'instagram_www",{"is_age_gated":true',
+                            '"is_age_gated":true',
                             'age_gated":true',
-                            'nativebookmark',
-                            '{"is_age_gated":true'
+                            'This content may be sensitive',
+                            'Content warning',
+                            'may contain sensitive content',
+                            'restricted content',
+                            'mature content',
+                            '"is_restricted":true',
+                            'need to confirm'
                         ]
                         for marker in age_gate_markers:
-                            if marker in text:
+                            if marker.lower() in text.lower():
                                 logger.info(f'Age-restricted content detected in URL: {url}')
                                 return True
                     except Exception as e:

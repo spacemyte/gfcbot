@@ -506,8 +506,8 @@ class TwitterEmbed(commands.Cog):
     
     async def _is_age_restricted(self, url: str, timeout: int = 5) -> bool:
         """
-        Check if a Twitter/X URL is age-restricted by making a request
-        and checking for age-gate markers in the response.
+        Check if a Twitter/X URL is age-restricted by attempting to fetch
+        the content and checking for access restrictions.
         
         Args:
             url: Twitter/X URL to check
@@ -520,19 +520,30 @@ class TwitterEmbed(commands.Cog):
             self.session = aiohttp.ClientSession()
         
         try:
-            async with self.session.get(url, timeout=timeout, allow_redirects=True) as response:
+            async with self.session.get(url, timeout=timeout, allow_redirects=True, ssl=False) as response:
+                # 403 Forbidden or redirects to age-gate page indicate restricted content
+                if response.status == 403:
+                    logger.info(f'Age-restricted content detected (403 Forbidden): {url}')
+                    return True
+                
                 if response.status == 200:
                     try:
                         text = await response.text()
-                        # Check for common age-gate patterns in Twitter HTML
+                        # Check for age-restriction indicators in the response
                         age_gate_markers = [
                             '"sensitive_warning":true',
                             'data-testid="interstitial"',
                             'age_restricted',
-                            '"withSensitiveMediaWarning":true'
+                            '"withSensitiveMediaWarning":true',
+                            'This post may contain sensitive content',
+                            'sensitive content',
+                            'content warning',
+                            'may contain sensitive content',
+                            '"is_restricted":true',
+                            'age gate'
                         ]
                         for marker in age_gate_markers:
-                            if marker in text:
+                            if marker.lower() in text.lower():
                                 logger.info(f'Age-restricted content detected in URL: {url}')
                                 return True
                     except Exception as e:
