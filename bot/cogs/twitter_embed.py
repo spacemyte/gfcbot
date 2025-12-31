@@ -10,9 +10,9 @@ from datetime import datetime
 
 logger = logging.getLogger('gfcbot.twitter_embed')
 
-# Twitter/X URL pattern - matches both twitter.com and x.com URLs
+# Twitter/X URL pattern - matches both twitter.com and x.com URLs with optional prefixes
 TWITTER_URL_PATTERN = re.compile(
-    r'https?://(?:www\.)?(?:twitter\.com|x\.com)/\w+/status/(\d+)',
+    r'https?://(?:www\.)?(?:[a-z]+)?(?:twitter\.com|x\.com)/\w+/status/(\d+)',
     re.IGNORECASE
 )
 
