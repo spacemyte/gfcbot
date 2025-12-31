@@ -677,10 +677,10 @@ class InstagramEmbed(commands.Cog):
             validation_error=error
         )
         
-        # Send reply with original URL
+        # Send reply with warning message only
         try:
             await message.reply(
-                f'⚠️ Could not embed the Instagram URL. Original: {original_url}',
+                f'⚠️ {error}\nPlease open the URL in the Instagram app to view.',
                 mention_author=False
             )
         except discord.HTTPException as e:

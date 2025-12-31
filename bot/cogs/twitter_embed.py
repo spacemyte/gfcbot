@@ -656,13 +656,14 @@ class TwitterEmbed(commands.Cog):
             validation_error=error
         )
         
-        # Send reply with error message
+        # Send reply with warning message only
         try:
             await message.reply(
-                f'⚠️ {error}',
+                f'⚠️ {error}\nPlease open the URL in the Twitter/X app to view.',
                 mention_author=False
             )
         except discord.HTTPException as e:
+            logger.error(f'Failed to send reply: {e}')
             logger.error(f'Failed to send reply: {e}')
 
 
