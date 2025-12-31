@@ -111,6 +111,12 @@ async def on_guild_join(guild):
 
 
 @bot.event
+async def on_guild_remove(guild):
+    """Event handler for when bot is removed from a guild."""
+    logger.info(f'Removed from guild: {guild.name} (ID: {guild.id})')
+
+
+@bot.event
 async def on_command_error(ctx, error):
     """Global error handler for commands."""
     if isinstance(error, commands.CommandNotFound):

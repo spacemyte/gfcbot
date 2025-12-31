@@ -20,7 +20,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 let botGuildCache = { ids: [], fetchedAt: 0 };
-const BOT_GUILD_CACHE_TTL_MS = 5 * 60 * 1000;
+const BOT_GUILD_CACHE_TTL_MS = 1 * 60 * 1000; // 1 minute instead of 5
 
 // Log database configuration
 console.log("✓ Using PostgreSQL (DATABASE_URL)");
@@ -116,9 +116,9 @@ app.get(
 );
 
 async function fetchBotGuildIds() {
-  if (!process.env.DISCORD_BOT_TOKEN) {
+  if (!process.env.DISCORD_TOKEN) {
     console.warn(
-      "DISCORD_BOT_TOKEN not set - cannot filter guilds by bot presence"
+      "DISCORD_TOKEN not set - cannot filter guilds by bot presence"
     );
     return null;
   }
@@ -135,7 +135,7 @@ async function fetchBotGuildIds() {
     const resp = await axios.get(
       "https://discord.com/api/v10/users/@me/guilds",
       {
-        headers: { Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}` },
+        headers: { Authorization: `Bot ${process.env.DISCORD_TOKEN}` },
       }
     );
     const ids = resp.data.map((g) => g.id);
