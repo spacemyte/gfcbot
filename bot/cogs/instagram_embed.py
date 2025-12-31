@@ -587,8 +587,8 @@ class InstagramEmbed(commands.Cog):
     
     async def _is_age_restricted(self, url: str, timeout: int = 5) -> bool:
         """
-        Check if an Instagram URL is age-restricted by attempting to fetch
-        the content and checking for access restrictions.
+        Check if an Instagram URL is age-restricted by using a third-party
+        scraper service to detect access restrictions.
         
         Args:
             url: Instagram URL to check
@@ -601,38 +601,37 @@ class InstagramEmbed(commands.Cog):
             return False
         
         try:
-            # Try to access the URL and check for restriction indicators
-            async with self.session.get(url, timeout=timeout, allow_redirects=True, ssl=False) as response:
-                # 403 Forbidden often indicates age-restricted content
-                if response.status == 403:
-                    logger.info(f'Age-restricted content detected (403 Forbidden): {url}')
-                    return True
-                
+            # Try using kkinstagram.com as a scraper to check for age restrictions
+            # Age-restricted content will show "open in app" message on scraper services
+            scraper_url = url.replace('instagram.com', 'kkinstagram.com')
+            
+            async with self.session.get(scraper_url, timeout=timeout, allow_redirects=True, ssl=False) as response:
                 if response.status == 200:
                     try:
                         text = await response.text()
-                        # Check for age-restriction indicators in the response
+                        # Check for indicators that the content is age-restricted on scraper
                         age_gate_markers = [
-                            '"is_age_gated":true',
-                            'age_gated":true',
-                            'This content may be sensitive',
-                            'Content warning',
-                            'may contain sensitive content',
-                            'restricted content',
-                            'mature content',
-                            '"is_restricted":true',
-                            'need to confirm'
+                            'open in app',
+                            'to continue to instagram',
+                            'restricted',
+                            'age restricted',
+                            'sensitive content',
+                            'content warning',
+                            'cannot access',
+                            'is not available',
+                            'post is not available'
                         ]
                         for marker in age_gate_markers:
                             if marker.lower() in text.lower():
-                                logger.info(f'Age-restricted content detected in URL: {url}')
+                                logger.info(f'Age-restricted content detected via scraper for URL: {url}')
                                 return True
                     except Exception as e:
-                        logger.warning(f'Error checking age-restriction for {url}: {e}')
+                        logger.warning(f'Error checking age-restriction via scraper for {url}: {e}')
                         return False
         except Exception as e:
             logger.warning(f'Error validating age-restriction for {url}: {e}')
-            return False
+        
+        return False
         
         return False
     

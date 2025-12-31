@@ -506,8 +506,8 @@ class TwitterEmbed(commands.Cog):
     
     async def _is_age_restricted(self, url: str, timeout: int = 5) -> bool:
         """
-        Check if a Twitter/X URL is age-restricted by attempting to fetch
-        the content and checking for access restrictions.
+        Check if a Twitter/X URL is age-restricted by using a scraper service
+        to detect access restrictions.
         
         Args:
             url: Twitter/X URL to check
@@ -520,29 +520,36 @@ class TwitterEmbed(commands.Cog):
             self.session = aiohttp.ClientSession()
         
         try:
-            async with self.session.get(url, timeout=timeout, allow_redirects=True, ssl=False) as response:
-                # 403 Forbidden or redirects to age-gate page indicate restricted content
-                if response.status == 403:
-                    logger.info(f'Age-restricted content detected (403 Forbidden): {url}')
-                    return True
+            # Try using nitter.net as a scraper to check for age restrictions
+            # Age-restricted content will show restriction messages on scraper services
+            if 'twitter.com' in url or 'x.com' in url:
+                scraper_url = url.replace('twitter.com', 'nitter.net').replace('x.com', 'nitter.net')
                 
-                if response.status == 200:
-                    try:
-                        text = await response.text()
-                        # Check for age-restriction indicators in the response
-                        age_gate_markers = [
-                            '"sensitive_warning":true',
-                            'data-testid="interstitial"',
-                            'age_restricted',
-                            '"withSensitiveMediaWarning":true',
-                            'This post may contain sensitive content',
-                            'sensitive content',
-                            'content warning',
-                            'may contain sensitive content',
-                            '"is_restricted":true',
-                            'age gate'
-                        ]
-                        for marker in age_gate_markers:
+                async with self.session.get(scraper_url, timeout=timeout, allow_redirects=True, ssl=False) as response:
+                    if response.status == 200:
+                        try:
+                            text = await response.text()
+                            # Check for indicators that the content is age-restricted on scraper
+                            age_gate_markers = [
+                                'sensitive content warning',
+                                'age restricted',
+                                'not available',
+                                'restricted',
+                                'cannot access',
+                                'open the app',
+                                'viewer is restricted'
+                            ]
+                            for marker in age_gate_markers:
+                                if marker.lower() in text.lower():
+                                    logger.info(f'Age-restricted content detected via scraper for URL: {url}')
+                                    return True
+                        except Exception as e:
+                            logger.warning(f'Error checking age-restriction via scraper for {url}: {e}')
+                            return False
+        except Exception as e:
+            logger.warning(f'Error validating age-restriction for {url}: {e}')
+        
+        return False
                             if marker.lower() in text.lower():
                                 logger.info(f'Age-restricted content detected in URL: {url}')
                                 return True
