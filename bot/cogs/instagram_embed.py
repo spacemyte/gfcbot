@@ -81,6 +81,31 @@ class InstagramEmbed(commands.Cog):
             self.config_cache.clear()
             logger.info('Cleared Instagram embed config cache for all guilds')
     
+    def _resolve_emoji(self, emoji_str: str, guild: discord.Guild):
+        """
+        Resolve an emoji string to an actual emoji object.
+        Supports unicode emojis and Discord emoji codes like :emoji_name:
+        
+        Returns:
+            Emoji object/string that can be used with add_reaction, or None if not found
+        """
+        if not emoji_str:
+            return '🙏'
+        
+        # Check if it's a Discord emoji code (e.g., :custom_emoji:)
+        if emoji_str.startswith(':') and emoji_str.endswith(':'):
+            emoji_name = emoji_str[1:-1]
+            # Try to find the emoji by name in the guild
+            emoji = discord.utils.get(guild.emojis, name=emoji_name)
+            if emoji:
+                return emoji
+            else:
+                logger.warning(f'Custom emoji :{emoji_name}: not found in guild {guild.id}')
+                return '🙏'  # Fallback to default if not found
+        else:
+            # It's a unicode emoji, return as-is
+            return emoji_str
+    
     async def cog_unload(self):
         """Clean up aiohttp session when cog unloads."""
         if self.session:
@@ -181,7 +206,8 @@ class InstagramEmbed(commands.Cog):
             config = await self.get_instagram_embed_config(message.guild.id)
             if not config.get('reaction_enabled', True):
                 return
-            reaction_emoji = config.get('reaction_emoji', '🙏')
+            reaction_emoji_str = config.get('reaction_emoji', '🙏')
+            reaction_emoji = self._resolve_emoji(reaction_emoji_str, message.guild)
             try:
                 await message.add_reaction(reaction_emoji)
                 logger.info(f'Reacted with {reaction_emoji} to already-embedded URL: {original_url}')
