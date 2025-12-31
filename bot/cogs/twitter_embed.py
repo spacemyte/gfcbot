@@ -597,6 +597,46 @@ class TwitterEmbed(commands.Cog):
                 logger.warning(f'Failed to suppress original message embed: {e}')
         
         return msg
+    
+    async def _handle_failure(
+        self,
+        message: discord.Message,
+        original_url: str,
+        error: str
+    ):
+        """
+        Handle failed URL embedding.
+        
+        Args:
+            message: Discord message
+            original_url: Original Twitter/X URL
+            error: Error message
+        """
+        # Log failure to database
+        if not message.guild:
+            logger.warning('Message has no guild, skipping failed embedding log')
+            return
+        
+        await self.bot.db.insert_message_data(
+            message_id=message.id,
+            channel_id=message.channel.id,
+            server_id=message.guild.id,
+            user_id=message.author.id,
+            original_url=original_url,
+            embedded_url=None,
+            embed_prefix_used=None,
+            validation_status='failed',
+            validation_error=error
+        )
+        
+        # Send reply with error message
+        try:
+            await message.reply(
+                f'⚠️ {error}',
+                mention_author=False
+            )
+        except discord.HTTPException as e:
+            logger.error(f'Failed to send reply: {e}')
 
 
 async def setup(bot):
