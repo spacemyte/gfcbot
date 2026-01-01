@@ -502,62 +502,7 @@ class TwitterEmbed(commands.Cog):
             logger.warning(f'URL validation error: {url} ({error})')
             return False, error
     
-    async def _is_age_restricted(self, url: str, timeout: int = 5) -> bool:
-        """
-        Check if a Twitter/X URL is age-restricted by using scraper services
-        (like Nitter) to detect access restrictions.
-        
-        Args:
-            url: Twitter/X URL to check
-            timeout: Timeout in seconds
-            
-        Returns:
-            True if age-restricted, False otherwise
-        """
-        if not self.session:
-            self.session = aiohttp.ClientSession()
-        
-        # Try multiple Twitter scraper services
-        scraper_services = [
-            lambda u: u.replace('twitter.com', 'nitter.net').replace('x.com', 'nitter.net'),
-            lambda u: u.replace('twitter.com', 'nitter.poast.org').replace('x.com', 'nitter.poast.org'),
-        ]
-        
-        for scraper_fn in scraper_services:
-            try:
-                scraper_url = scraper_fn(url)
-                async with self.session.get(scraper_url, timeout=timeout, allow_redirects=True, ssl=False) as response:
-                    if response.status == 200:
-                        try:
-                            text = await response.text()
-                            # Check for indicators that the content is age-restricted on scraper
-                            age_gate_markers = [
-                                'sensitive content warning',
-                                'age restricted',
-                                'not available',
-                                'restricted',
-                                'cannot access',
-                                'open the app',
-                                'viewer is restricted',
-                                'tweet not found',
-                                'account suspended'
-                            ]
-                            for marker in age_gate_markers:
-                                if marker.lower() in text.lower():
-                                    logger.info(f'Age-restricted content detected via scraper for URL: {url}')
-                                    return True
-                        except Exception as e:
-                            logger.debug(f'Error checking age-restriction via {scraper_url}: {e}')
-                            continue
-                    elif response.status == 403:
-                        logger.info(f'Age-restricted content detected (403 Forbidden) at {scraper_url}')
-                        return True
-            except Exception as e:
-                logger.debug(f'Error accessing scraper service for {url}: {e}')
-                continue
-        
-        return False
-    
+
     async def _repost_with_webhook(
         self,
         original_message: discord.Message,

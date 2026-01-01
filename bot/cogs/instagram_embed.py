@@ -328,16 +328,7 @@ class InstagramEmbed(commands.Cog):
             logger.warning('Message has no guild (DM or system message); skipping embed config.')
             return
         
-        # Check if the content is age-restricted
-        if await self._is_age_restricted(original_url):
-            logger.info(f'URL {original_url} is age-restricted, skipping embed')
-            config = await self.get_instagram_embed_config(guild.id)
-            # Only send warning if not silenced
-            if not config.get('silence_restricted_warning', False):
-                warning_msg = config.get('restricted_warning_message', 'Cannot embed restricted content, please login to the original URL to view')
-                await self._handle_failure(message, original_url, warning_msg)
-            return
-        
+
         config = await self.get_instagram_embed_config(guild.id)
         webhook_mode = config.get('webhook_repost_enabled', False)
         logger.info(f'Instagram embed config for guild {guild.id}: webhook_repost_enabled={webhook_mode}')
@@ -589,65 +580,7 @@ class InstagramEmbed(commands.Cog):
         except Exception as e:
             return False, f'Unexpected error: {str(e)}'
     
-    async def _is_age_restricted(self, url: str, timeout: int = 5) -> bool:
-        """
-        Check if an Instagram URL is age-restricted by using scraper services
-        (similar to Nitter for Twitter) to detect access restrictions.
-        
-        Args:
-            url: Instagram URL to check
-            timeout: Timeout in seconds
-            
-        Returns:
-            True if age-restricted, False otherwise
-        """
-        if not self.session:
-            return False
-        
-        # Try multiple Instagram scraper services (like Nitter for Instagram)
-        scraper_services = [
-            lambda u: u.replace('instagram.com', 'proxigram.com'),
-            lambda u: u.replace('instagram.com', 'picnob.com'),
-            lambda u: u.replace('instagram.com', 'kkinstagram.com'),
-        ]
-        
-        for scraper_fn in scraper_services:
-            try:
-                scraper_url = scraper_fn(url)
-                async with self.session.get(scraper_url, timeout=timeout, allow_redirects=True, ssl=False) as response:
-                    if response.status == 200:
-                        try:
-                            text = await response.text()
-                            # Check for indicators that the content is age-restricted on scraper
-                            age_gate_markers = [
-                                'open in app',
-                                'to continue to instagram',
-                                'restricted',
-                                'age restricted',
-                                'sensitive content',
-                                'content warning',
-                                'cannot access',
-                                'is not available',
-                                'post is not available',
-                                'this account is private',
-                                'user not found'
-                            ]
-                            for marker in age_gate_markers:
-                                if marker.lower() in text.lower():
-                                    logger.info(f'Age-restricted content detected via scraper for URL: {url}')
-                                    return True
-                        except Exception as e:
-                            logger.debug(f'Error checking age-restriction via {scraper_url}: {e}')
-                            continue
-                    elif response.status == 403:
-                        logger.info(f'Age-restricted content detected (403 Forbidden) at {scraper_url}')
-                        return True
-            except Exception as e:
-                logger.debug(f'Error accessing scraper service for {url}: {e}')
-                continue
-        
-        return False
-        
+
         return False
     
     async def _handle_failure(
